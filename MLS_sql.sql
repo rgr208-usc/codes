@@ -1,3 +1,4 @@
+--MLS
 CREATE TABLE output_mls AS
 (SELECT clip, fips_code, listing_id_standardized, listing_type, listing_status_category_code_standardized,
        listing_status_code_standardized, listing_transaction_type_code_derived, listing_date, original_listing_date,
