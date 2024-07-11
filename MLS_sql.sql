@@ -11,7 +11,7 @@ CREATE TABLE output_mls AS
        original_listing_date_and_time_standardized,
        last_listing_date_and_time_standardized, days_on_market_dom, days_on_market_dom_cumulative, close_price, current_listing_price,
        original_listing_price, price_per_square_foot FROM mls.listings
-WHERE listing_transaction_type_code_derived='S' AND listing_date!='' AND listing_date!='TBD' AND (fips_code='06037' OR fips_code='06059' OR  fips_code='06065' OR  fips_code='06071'  OR fips_code='06111'));
+WHERE listing_transaction_type_code_derived='S' AND listing_date!='' AND listing_date!='TBD' AND price_per_square_foot!=''  AND (fips_code='06037' OR fips_code='06059' OR  fips_code='06065' OR  fips_code='06071'  OR fips_code='06111'));
 
 /*
 SELECT t.*, CTID
@@ -25,8 +25,28 @@ ALTER TABLE output_mls
 ALTER COLUMN listing_month  TYPE NUMERIC USING listing_month::NUMERIC
 ALTER TABLE output_mls
 ALTER COLUMN listing_year  TYPE NUMERIC USING listing_year::NUMERIC
-ALTER COLUMN days_on_market_dom_cumulative  TYPE NUMERIC USING days_on_market_dom_cumulative::NUMERIC
-ALTER COLUMN days_on_market_dom_cumulative  TYPE NUMERIC USING days_on_market_dom_cumulative::NUMERIC
-ALTER COLUMN original_listing_price  TYPE NUMERIC USING orginal_listing_price::NUMERIC
-ALTER COLUMN close_price  TYPE NUMERIC USING close_price::NUMERIC
+ALTER TABLE output_mls
 ALTER COLUMN price_per_square_foot  TYPE NUMERIC USING price_per_square_foot::NUMERIC
+    /*
+ALTER COLUMN close_price  TYPE NUMERIC USING close_price::NUMERIC
+ALTER TABLE output_mls
+ALTER COLUMN current_listing_price  TYPE NUMERIC USING current_listing_price::NUMERIC
+
+ALTER COLUMN days_on_market_dom  TYPE NUMERIC USING  days_on_market_dom::NUMERIC
+ALTER COLUMN days_on_market_dom_cumulative  TYPE NUMERIC USING days_on_market_dom_cumulative::NUMERIC
+ALTER TABLE output_mls
+ALTER COLUMN original_listing_price  TYPE NUMERIC USING original_listing_price::NUMERIC
+ALTER COLUMN close_price  TYPE NUMERIC USING close_price::NUMERIC
+
+      ALTER TABLE output_mls
+ALTER COLUMN price_per_square_foot  TYPE NUMERIC USING price_per_square_foot::NUMERIC
+
+
+     */
+
+
+CREATE TABLE collaps AS
+(SELECT listing_address_zip_code, listing_year, COUNT(fips_code) as listings, AVG( price_per_square_foot) AS psf
+
+ FROM output_mls
+                                      GROUP BY listing_address_zip_code, listing_year ORDER BY listing_address_zip_code, listing_year ) ;
