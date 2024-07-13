@@ -23,6 +23,19 @@ Los Angeles
 
 
 
+
+#delimit;
+
+clear all;
+cd /Users/ranciere/Dropbox/data_sources/Corelogic;
+odbc query "PostgreSQLDB", dialog(complete) user(ranciere) password(usc2024!!);
+odbc load, exec ("SELECT * FROM public.zip_mls " )  dsn("postgreSQLDB");
+
+
+
+
+
+
 #delimit;
 
 clear all;
