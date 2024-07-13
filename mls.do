@@ -60,6 +60,32 @@ save mls2, replace;
 
 
 spmap  cl_psf using zipcodes_coor.dta if year==2023 & month==7 & fip==06037 , id(id) fcolor(Reds) title( "PPSF LA CO JULY 2021");
+
+
+/*
+listing_sta |
+tus_categor |
+y_code_stan |
+   dardized |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          A |     21,134        0.61        0.61
+          D |         33        0.00        0.61
+          S |  2,391,585       68.50       69.11
+          U |      8,879        0.25       69.36
+          X |  1,069,626       30.64      100.00
+------------+-----------------------------------
+      Total |  3,491,257      100.00
+	  
+	  CdTbl	CdVal	CdDesc
+LSTCAT	A  	ACTIVE
+LSTCAT	D  	DELETED
+LSTCAT	S  	SOLD
+LSTCAT	U  	PENDING
+LSTCAT	X  	EXPIRED (INCLUDES WITHDRAWN, CANCELLED, TERMINATED, INACTIVE, ETC.)
+
+*/
+
+
 /*
 
 #delimit;
