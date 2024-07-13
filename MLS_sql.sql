@@ -9,7 +9,8 @@ CREATE TABLE output_mls AS
        close_date, close_date_standardized, SUBSTRING(close_date_standardized FROM 1 FOR 4) as close_year, SUBSTRING(close_date_standardized FROM 6 FOR 2) as close_month ,
        off_market_date_and_time_standardized, off_market_date,
        original_listing_date_and_time_standardized,
-       last_listing_date_and_time_standardized, days_on_market_dom, listings.days_on_market_dom_derived, days_on_market_dom_cumulative, close_price, current_listing_price,
+       last_listing_date_and_time_standardized, days_on_market_dom, listings.days_on_market_dom_derived, days_on_market_dom_cumulative,
+       close_price, current_listing_price,
        original_listing_price, price_per_square_foot FROM mls.listings
 WHERE listing_transaction_type_code_derived='S' AND listing_date!='' AND listing_date!='TBD' AND current_listing_price!='' AND price_per_square_foot!=''
   AND days_on_market_dom_derived!='' AND close_price!=''  AND (fips_code='06037' OR fips_code='06059' OR  fips_code='06065' OR  fips_code='06071'  OR fips_code='06111'));
@@ -50,8 +51,12 @@ AVG(current_listing_price) AS list_p, AVG(close_price) AS price,AVG(days_on_mark
 ---FULL TABLE ----
 
 ---FULL TABLE ----
+DROP TABLE transaction
 CREATE TABLE transaction AS
-(SELECT clip, fips_code, listing_address_zip_code, SUBSTRING(close_date_standardized FROM 1 FOR 4) as close_year, SUBSTRING(close_date_standardized FROM 6 FOR 2) as close_month
+(SELECT clip, fips_code, listing_address_zip_code, SUBSTRING(close_date_standardized FROM 1 FOR 4) as close_year,
+        SUBSTRING(close_date_standardized FROM 6 FOR 2) as close_month,
+        close_price, current_listing_price, original_listing_price, price_per_square_foot,
+        days_on_market_dom_derived, days_on_market_dom_cumulative
         FROM mls.listings
 WHERE listing_status_category_code_standardized='S'  AND (fips_code='06037' OR fips_code='06059' OR  fips_code='06065' OR  fips_code='06071'  OR fips_code='06111'));
 
