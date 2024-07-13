@@ -27,7 +27,7 @@ Los Angeles
 
 
 clear all
-cd /Users/ranciere/Dropbox/data_sources/Corelogic;
+cd /Users/ranciere/Dropbox/data_sources/Corelogic
 odbc query "PostgreSQLDB", dialog(complete) user(ranciere) password(usc2024!!)
 odbc load, exec ("SELECT * FROM public.output_mls_full " )  dsn("postgreSQLDB")
 
@@ -53,63 +53,65 @@ g listing=1
 collapse (sum) listing (mean) fips zip, by(ZIP_CODE month year)
 
 
-g day=15;
 
-g date=mdy(month,day,year);
-format date %td;
 
-gen month2 = mofd(date);
-format month2 %tm;
-
-g id=1
 
 merge m:1 ZIP_CODE using zipcodes
 keep if _merge==3
 
 
 
+g day=15
+
+g date=mdy(month,day,year)
+format date %td
+
+gen month2 = mofd(date)
+format month2 %tm
+
+tsset zip month2
+
 save zip_listing, replace
 
 
 
 
-#delimit;
 
-clear all;
-cd /Users/ranciere/Dropbox/data_sources/Corelogic;
-odbc query "PostgreSQLDB", dialog(complete) user(ranciere) password(usc2024!!);
-odbc load, exec ("SELECT * FROM public.zip_mls " )  dsn("postgreSQLDB");
+clear all
+cd /Users/ranciere/Dropbox/data_sources/Corelogic
+odbc query "PostgreSQLDB", dialog(complete) user(ranciere) password(usc2024!!)
+odbc load, exec ("SELECT * FROM public.zip_mls " )  dsn("postgreSQLDB")
 
-rename listing_address_zip_code ZIP_CODE_L;
-gen str5 ZIP_CODE = substr(ZIP_CODE_L, 1, 5);
-drop if ZIP_CODE=="";
+rename listing_address_zip_code ZIP_CODE_L
+gen str5 ZIP_CODE = substr(ZIP_CODE_L, 1, 5)
+drop if ZIP_CODE==""
 
-save mls, replace;
+save mls, replace
 
-merge m:1 ZIP_CODE using zipcodes;
-keep if _merge==3;
+merge m:1 ZIP_CODE using zipcodes
+keep if _merge==3
 
-#delimit;
+#delimit
 
-rename listing_year year;
-rename listing_month month;
+rename listing_year year
+rename listing_month month
 
-gen day=1;
-g date=mdy(month,day,year);
-format date %td;
+gen day=1
+g date=mdy(month,day,year)
+format date %td
 
-gen month2 = mofd(date);
-format month2 %tm;
+gen month2 = mofd(date)
+format month2 %tm
 
 
-destring ZIP_CODE, g(zip);
-tsset zip month2;
+destring ZIP_CODE, g(zip)
+tsset zip month2
 
  
-save mls2, replace;
+save mls2, replace
 
 
-spmap  cl_psf using zipcodes_coor.dta if year==2023 & month==7 & fip==06037 , id(id) fcolor(Reds) title( "PPSF LA CO JULY 2021");
+spmap  cl_psf using zipcodes_coor.dta if year==2023 & month==7 & fip==06037 , id(id) fcolor(Reds) title( "PPSF LA CO JULY 2021")
 
 
 /*
@@ -138,27 +140,27 @@ LSTCAT	X  	EXPIRED (INCLUDES WITHDRAWN, CANCELLED, TERMINATED, INACTIVE, ETC.)
 
 /*
 
-#delimit;
+#delimit
 
-clear all;
-cd /Users/ranciere/Dropbox/data_sources/Corelogic;
-odbc query "PostgreSQLDB", dialog(complete) user(ranciere) password(usc2024!!);
-odbc load, exec ("SELECT * FROM mortgage.output_table " )  dsn("postgreSQLDB");
-
-
+clear all
+cd /Users/ranciere/Dropbox/data_sources/Corelogic
+odbc query "PostgreSQLDB", dialog(complete) user(ranciere) password(usc2024!!)
+odbc load, exec ("SELECT * FROM mortgage.output_table " )  dsn("postgreSQLDB")
 
 
 
-g refi=1 if mortgage_type_code=="R";
-g junior=1 if mortgage_type_code=="J";
-g purchase=1 if mortgage_type_code=="P";
+
+
+g refi=1 if mortgage_type_code=="R"
+g junior=1 if mortgage_type_code=="J"
+g purchase=1 if mortgage_type_code=="P"
 
 
 /*
 foreach var of varlist transaction_year-fixed_rate_indicator mortgage_interest_rate-purchase{
 	destring `var', g(`var'n) force
 }
-;
+
 */
 
 
@@ -177,13 +179,13 @@ mortgage_ty |
 */
 
 
-rename transaction_monthn month;
-rename transaction_yearn year;
+rename transaction_monthn month
+rename transaction_yearn year
 
 g id==1
 
 
-save mortgage.dta, replace;
+save mortgage.dta, replace
 
 
 /*
@@ -222,7 +224,7 @@ odbc load, exec("SELECT clip, fips_code, listing_id_standardized, listing_type, 
  "SELECT transaction_batch_date, SUBSTRING(transaction_batch_date FROM 1 FOR 4) as transaction_year FROM mortgage.basics"
 
  
- SELECT ZIPCode, Year, AVG(Price) AS AveragePrice FROM ownertransfer GROUP BY ZIPCode, Year ORDER BY ZIPCode, Year;
+ SELECT ZIPCode, Year, AVG(Price) AS AveragePrice FROM ownertransfer GROUP BY ZIPCode, Year ORDER BY ZIPCode, Year
  
  
  */
@@ -236,7 +238,7 @@ odbc load, exec("SELECT clip, fips_code, mortgage_composite_transaction_id, tran
 odbc load, exec ("SELECT clip, fips_code, transaction_batch_date, SUBSTRING(transaction_batch_date FROM 1 FOR 4) as transaction_year, SUBSTRING(transaction_batch_date FROM 5 FOR 2) as transaction_month,
        variable_rate_loan_indicator,
        fixed_rate_indicator
-FROM mortgage.basics WHERE  fips_code='06037' OR fips_code='06059' OR  fips_code='06065' OR  fips_code='06071'  OR fips_code='06111' ") dsn("postgreSQLDB");
+FROM mortgage.basics WHERE  fips_code='06037' OR fips_code='06059' OR  fips_code='06065' OR  fips_code='06071'  OR fips_code='06111' ") dsn("postgreSQLDB")
  */
  
  
@@ -249,11 +251,11 @@ FROM mortgage.basics WHERE  fips_code='06037' OR fips_code='06059' OR  fips_code
 foreach var of varlist transaction_year-fixed_rate_indicator{
 	destring `var', g(`var'n) force
 }
-;
 
-save mortgage.dta, replace;
 
-collapse (mean) variable_rate_loan_indicatorn fixed_rate_indicatorn   , by(year);
+save mortgage.dta, replace
+
+collapse (mean) variable_rate_loan_indicatorn fixed_rate_indicatorn   , by(year)
 
 */
 
