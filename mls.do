@@ -24,14 +24,47 @@ Los Angeles
 
 
 
-#delimit;
 
-clear all;
+
+clear all
 cd /Users/ranciere/Dropbox/data_sources/Corelogic;
-odbc query "PostgreSQLDB", dialog(complete) user(ranciere) password(usc2024!!);
-odbc load, exec ("SELECT * FROM public.zip_mls " )  dsn("postgreSQLDB");
+odbc query "PostgreSQLDB", dialog(complete) user(ranciere) password(usc2024!!)
+odbc load, exec ("SELECT * FROM public.output_mls_full " )  dsn("postgreSQLDB")
 
 
+drop if listing_type=="Lease"
+drop listing_type census_tract
+order listing_address_zip_code listing_year listing_month
+
+gen str5 ZIP_CODE = substr(listing_address_zip_code, 1, 5)
+
+
+destring listing_year, g(year)
+destring listing_month, g(month)
+destring fips_code, g(fips)
+destring ZIP_CODE, g(zip)
+
+rename var7 listing_status_cat_code_standard
+
+save mls_listing, replace
+
+keep if listing_status_cat_code_standard=="A"
+g id=1
+collapse (sum) id (mean) fips zip, by(ZIP_CODE month year)
+
+
+g day=15;
+
+g date=mdy(month,day,year);
+format date %td;
+
+gen month2 = mofd(date);
+format month2 %tm;
+
+g id=1
+
+merge m:1 ZIP_CODE using zipcodes;
+keep if _merge==3
 
 
 
