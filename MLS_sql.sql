@@ -49,3 +49,13 @@ AVG(current_listing_price) AS list_p, AVG(close_price) AS price,AVG(days_on_mark
 
 ---FULL TABLE ----
 
+---FULL TABLE ----
+CREATE TABLE output_mls_full AS
+(SELECT clip, fips_code, listing_address_zip_code, census_tract, listing_type, listing_status_code, listing_status_category_code_standardized,
+       listing_status_code_standardized, listing_date, SUBSTRING(listing_date FROM 1 FOR 4) as listing_year,
+       SUBSTRING(listing_date FROM 6 FOR 2) as listing_month,
+        FROM mls.listings
+WHERE listing_transaction_type_code_derived='S' AND listing_date!=''
+  AND listing_date!='TBD' AND (fips_code='06037' OR fips_code='06059' OR  fips_code='06065' OR  fips_code='06071'  OR fips_code='06111'));
+
+
