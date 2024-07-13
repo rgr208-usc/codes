@@ -49,8 +49,8 @@ rename var7 listing_status_cat_code_standard
 save mls_listing, replace
 
 keep if listing_status_cat_code_standard=="A"
-g id=1
-collapse (sum) id (mean) fips zip, by(ZIP_CODE month year)
+g listing=1
+collapse (sum) listing (mean) fips zip, by(ZIP_CODE month year)
 
 
 g day=15;
@@ -63,8 +63,12 @@ format month2 %tm;
 
 g id=1
 
-merge m:1 ZIP_CODE using zipcodes;
+merge m:1 ZIP_CODE using zipcodes
 keep if _merge==3
+
+
+
+save zip_listing, replace
 
 
 
