@@ -23,8 +23,52 @@ Los Angeles
 
 
 
+***TRANSACTION AND PRICE******
+
+clear all
+cd /Users/ranciere/Dropbox/data_sources/Corelogic
+odbc query "PostgreSQLDB", dialog(complete) user(ranciere) password(usc2024!!)
+odbc load, exec ("SELECT * FROM public.transaction " )  dsn("postgreSQLDB")
 
 
+gen str5 ZIP_CODE = substr(listing_address_zip_code, 1, 5)
+
+
+destring close_year, g(year)
+destring close_month, g(month)
+destring fips_code, g(fips)
+destring ZIP_CODE, g(zip)
+
+
+destring close_price, g(price)
+destring current_listing_price, g( listing_price)
+destring original_listing_price, g(ori_listing_price)
+destring price_per_square_foot, g(list_ppsf)
+
+save mls_transaction, replace
+
+g transaction=1
+collapse (sum) transaction (mean) fips zip  (median) list_ppsf  , by(ZIP_CODE month year)
+
+
+merge m:1 ZIP_CODE using zipcodes
+keep if _merge==3
+
+
+
+g day=15
+
+g date=mdy(month,day,year)
+format date %td
+
+gen month2 = mofd(date)
+format month2 %tm
+
+tsset zip month2
+
+save transaction, replace
+
+*****OUT******
 
 clear all
 cd /Users/ranciere/Dropbox/data_sources/Corelogic
@@ -111,7 +155,9 @@ tsset zip month2
 save mls2, replace
 
 
-spmap  cl_psf using zipcodes_coor.dta if year==2023 & month==7 & fip==06037 , id(id) fcolor(Reds) title( "PPSF LA CO JULY 2021")
+spmap  isting using zipcodes_coor.dta if year==2023 & month==7 & fip==06037 , id(id) fcolor(Reds) title( "PPSF LA CO JULY 2021")
+
+ g dln_listing= ln(listing)-ln(l24.listing)
 
 
 /*
