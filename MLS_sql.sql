@@ -40,7 +40,6 @@ UPDATE output_mls
 SET close_ppsf=price_per_square_foot*close_price/NULLIF(current_listing_price, 0);
 
 
-
 DROP TABLE zip_mls
 CREATE TABLE zip_mls AS
 (SELECT listing_address_zip_code, listing_year, listing_month, COUNT(fips_code) as listings, AVG( price_per_square_foot) AS list_psf,
