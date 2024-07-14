@@ -76,7 +76,10 @@ format month2 %tm
 
 tsset zip month2
 
-*spmap ppsf using zipcodes_coor.dta if year==2021 & month==7 & (fip==06037 | fip==06059 | fip==06111) & transaction>10 & ppsf>10, id(id) fcolor(Reds) title( "PPSF LA/ IRVINE / VENTURA JULY 2021")
+spmap transaction using zipcodes_coor.dta if year==2023 & month==7 & zip!=90704 & (fip==06037 | fip==06059 | fip==06111), id(id) fcolor(Reds) title( "TRANSACTION LA/ IRVINE/VENTURA JULY 2023")  clmethod (custom) clbreaks(0 5 32 63 111 352)
+
+g dlnp=ln(price)-ln(l24.price)
+g dln_transaction=ln(transaction)-ln(l24.transaction)
 
 save transaction, replace
 
