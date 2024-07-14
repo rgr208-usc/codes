@@ -52,8 +52,10 @@ g ppsf=price*list_ppsf/listing_price
 
 save mls_transaction, replace
 
+use mls_transaction, clear
+
 g transaction=1
-collapse (sum) transaction (mean) fips zip  (median) list_ppsf dom cumdom price listing_price  , by(ZIP_CODE month year)
+collapse (sum) transaction (mean) fips zip  (median) list_ppsf ppsf listing_price price dom cumdom , by(ZIP_CODE month year)
 
 
 merge m:1 ZIP_CODE using zipcodes
