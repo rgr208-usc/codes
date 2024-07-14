@@ -54,11 +54,11 @@ save mls_transaction, replace
 
 use mls_transaction, clear
 
-g list_to_price=listing_price/price
-g or_list_to_price = ori_listing_price/price
+g l_to_p=listing_price/price
+g ol_to_p = ori_listing_price/price
 
 g transaction=1
-collapse (sum) transaction (mean) fips zip  (median) list_ppsf ppsf listing_price price dom cumdom , by(ZIP_CODE month year)
+collapse (sum) transaction (mean) fips zip  (median) list_ppsf ppsf listing_price price dom cumdom l_to_p ol_to_p, by(ZIP_CODE month year)
 
 
 merge m:1 ZIP_CODE using zipcodes
@@ -76,7 +76,7 @@ format month2 %tm
 
 tsset zip month2
 
-spmap ppsf using zipcodes_coor.dta if year==2021 & month==7 & (fip==06037 | fip==06059 | fip==06111) & transaction>10 & ppsf>10, id(id) fcolor(Reds) title( "PPSF LA/ IRVINE / VENTURA JULY 2021")
+*spmap ppsf using zipcodes_coor.dta if year==2021 & month==7 & (fip==06037 | fip==06059 | fip==06111) & transaction>10 & ppsf>10, id(id) fcolor(Reds) title( "PPSF LA/ IRVINE / VENTURA JULY 2021")
 
 save transaction, replace
 
