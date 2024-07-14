@@ -61,3 +61,18 @@ CREATE TABLE transaction AS
 WHERE listing_status_category_code_standardized='S'  AND (fips_code='06037' OR fips_code='06059' OR  fips_code='06065' OR  fips_code='06071'  OR fips_code='06111'));
 
 
+/*
+
+A loop on this
+
+ALTER TABLE your_table
+ADD COLUMN price numeric;
+
+
+UPDATE your_table
+SET price = CASE
+               WHEN close_price ~ '^[0-9]+(\.[0-9]+)?$' THEN close_price::numeric
+               ELSE NULL
+            END;
+
+ */
