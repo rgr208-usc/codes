@@ -22,6 +22,27 @@ Los Angeles
 */
 
 
+/*
+property_type_code_standardized
+
+PROPTY	AP	Apartment
+PROPTY	BD	Boat Dock
+PROPTY	CN	Condo
+PROPTY	CO	Commercial/industrial/Business
+PROPTY	CP	Coop
+PROPTY	FM	Farm
+PROPTY	LD	Lots and Land
+PROPTY	MF	Multi Family (5 >)
+PROPTY	MH	Mobile Home
+PROPTY	RI	Residential Income (2-4 units/Duplex/Triplex/Fourplex)
+PROPTY	SF	Single Family
+PROPTY	TH	Townhouse
+PROPTY	TS	Fractional Ownershp/Timeshare
+
+
+*/
+
+
 
 ***TRANSACTION AND PRICE******
 
@@ -29,6 +50,8 @@ clear all
 cd /Users/ranciere/Dropbox/data_sources/Corelogic
 odbc query "PostgreSQLDB", dialog(complete) user(ranciere) password(usc2024!!)
 odbc load, exec ("SELECT * FROM public.transaction " )  dsn("postgreSQLDB")
+
+keep if property_type_code_standardized=="SF" | property_type_code_standardized=="TH" | property_type_code_standardized=="CN"
 
 
 gen str5 ZIP_CODE = substr(listing_address_zip_code, 1, 5)
@@ -76,7 +99,7 @@ format month2 %tm
 
 tsset zip month2
 
-spmap transaction using zipcodes_coor.dta if year==2023 & month==7 & zip!=90704 & (fip==06037 | fip==06059 | fip==06111), id(id) fcolor(Reds) title( "TRANSACTION LA/ IRVINE/VENTURA JULY 2023")  clmethod (custom) clbreaks(0 5 32 63 111 352)
+*spmap transaction using zipcodes_coor.dta if year==2023 & month==7 & zip!=90704 & (fip==06037 | fip==06059 | fip==06111), id(id) fcolor(Reds) title( "TRANSACTION LA/ IRVINE/VENTURA JULY 2023")  clmethod (custom) clbreaks(0 5 32 63 111 352)
 
 g dlnp=ln(price)-ln(l24.price)
 g dln_transaction=ln(transaction)-ln(l24.transaction)
