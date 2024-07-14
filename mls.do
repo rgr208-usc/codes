@@ -99,10 +99,16 @@ format month2 %tm
 
 tsset zip month2
 
-*spmap transaction using zipcodes_coor.dta if year==2023 & month==7 & zip!=90704 & (fip==06037 | fip==06059 | fip==06111), id(id) fcolor(Reds) title( "TRANSACTION LA/ IRVINE/VENTURA JULY 2023")  clmethod (custom) clbreaks(0 5 32 63 111 352)
+spmap transaction using zipcodes_coor.dta if year==2021 & month==7 & zip!=90704 & (fip==06037 | fip==06059 | fip==06111), id(id) fcolor(Reds) title( "TRANSACTION LA/ IRVINE/VENTURA JULY 2021")  clmethod (custom) clbreaks(0 14 29 58 102 144 331)
+spmap transaction using zipcodes_coor.dta if year==2023 & month==7 & zip!=90704 & (fip==06037 | fip==06059 | fip==06111), id(id) fcolor(Reds) title( "TRANSACTION LA/ IRVINE/VENTURA JULY 2023")  clmethod (custom) clbreaks(0 14 29 58 102 144 331)
+
+spmap dtransaction using zipcodes_coor.dta if year==2023 & month==7 & zip!=90704 & (fip==06037 | fip==06059 | fip==06111), id(id) fcolor(Reds) title( "D TRANSACTION LA/ IRVINE/VENTURA JULY 2023") clnumber(7)
+
 
 g dlnp=ln(price)-ln(l24.price)
 g dln_transaction=ln(transaction)-ln(l24.transaction)
+
+
 
 save transaction, replace
 
