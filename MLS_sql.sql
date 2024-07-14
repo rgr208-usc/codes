@@ -56,7 +56,7 @@ CREATE TABLE transaction AS
 (SELECT clip, fips_code, listing_address_zip_code, SUBSTRING(close_date_standardized FROM 1 FOR 4) as close_year,
         SUBSTRING(close_date_standardized FROM 6 FOR 2) as close_month,
         close_price, current_listing_price, original_listing_price, price_per_square_foot,
-        days_on_market_dom_derived, days_on_market_dom_cumulative
+        days_on_market_dom_derived, days_on_market_dom_cumulative, property_type_code_standardized
         FROM mls.listings
 WHERE listing_status_category_code_standardized='S'  AND (fips_code='06037' OR fips_code='06059' OR  fips_code='06065' OR  fips_code='06071'  OR fips_code='06111'));
 
