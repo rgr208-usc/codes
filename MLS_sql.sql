@@ -3,7 +3,7 @@
 
 -- LA (fips_code='06037' OR fips_code='06059' OR  fips_code='06065' OR  fips_code='06071'  OR fips_code='06111'));
 
-DROP TABLE TRANS_NUM
+DROP TABLE IF EXISTS TRANS_NUM
 CREATE TABLE TRANS_NUM AS
 (SELECT
     clip, fips_code, listing_address_zip_code,
@@ -25,17 +25,31 @@ WHERE listing_status_category_code_standardized='S' AND
 
 ---collpase----
 
---issue with median
-
-DROP TABLE zip_mls
+DROP TABLE IF EXISTS zip_mls2;
 CREATE TABLE zip_mls2 AS
-(SELECT listing_address_zip_code, close_year, close_month, COUNT(fips_code) as listings, AVG( price) AS price , AVG(list_p) as list_p,
-AVG(or_list_p) AS or_list_p, AVG(price*list_ppsf/NULLIF(list_p, 0)) as ppsf , AVG(dom) AS dom, AVG(cumdom) AS cumdom
- FROM TRANS_NUM
-GROUP BY listing_address_zip_code, close_year, close_month
-ORDER BY listing_address_zip_code, close_year, close_month ) ;
-
-SELECT * FROM zip_mls
+(
+    SELECT
+        listing_address_zip_code,
+        close_year,
+        close_month,
+        COUNT(fips_code) AS listings,
+        percentile_cont(0.5) WITHIN GROUP (ORDER BY price) AS price,
+        percentile_cont(0.5) WITHIN GROUP (ORDER BY list_p) AS list_p,
+        percentile_cont(0.5) WITHIN GROUP (ORDER BY or_list_p) AS or_list_p,
+        percentile_cont(0.5) WITHIN GROUP (ORDER BY price * list_ppsf / NULLIF(list_p, 0)) AS ppsf,
+        percentile_cont(0.5) WITHIN GROUP (ORDER BY dom) AS dom,
+        percentile_cont(0.5) WITHIN GROUP (ORDER BY cumdom) AS cumdom
+    FROM
+        TRANS_NUM
+    GROUP BY
+        listing_address_zip_code,
+        close_year,
+        close_month
+    ORDER BY
+        listing_address_zip_code,
+        close_year,
+        close_month
+);
 
 
 
