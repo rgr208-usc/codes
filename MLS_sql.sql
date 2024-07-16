@@ -6,7 +6,7 @@
 DROP TABLE TRANS_NUM
 CREATE TABLE TRANS_NUM AS
 (SELECT
-    clip, fips_code,  listing_address_zip_code,  property_type_code_standardized,
+    clip, fips_code, listing_address_zip_code,
     SUBSTRING(close_date_standardized FROM 1 FOR 4) as close_year,
     SUBSTRING(close_date_standardized FROM 6 FOR 2) as close_month,
     NULLIF(REGEXP_REPLACE(SUBSTRING(listing_date FROM 1 FOR 4),'[^0-9.]+', '', 'g'), '') as list_year,
@@ -18,21 +18,44 @@ CREATE TABLE TRANS_NUM AS
     NULLIF(REGEXP_REPLACE(days_on_market_dom_derived, '[^0-9.]+', '', 'g'), '')::numeric AS dom,
     NULLIF(REGEXP_REPLACE(days_on_market_dom_cumulative, '[^0-9.]+', '', 'g'), '')::numeric AS cumdom
 FROM   mls.listings
-WHERE listing_status_category_code_standardized='S');
+WHERE listing_status_category_code_standardized='S' AND
+      (property_type_code_standardized='CN' OR property_type_code_standardized='SF' OR  property_type_code_standardized='TH'   )
+);
 
 
 ---collpase----
 
 --issue with median
 
---conditional
-
 DROP TABLE zip_mls
 CREATE TABLE zip_mls2 AS
 (SELECT listing_address_zip_code, close_year, close_month, COUNT(fips_code) as listings, AVG( price) AS price , AVG(list_p) as list_p,
 AVG(or_list_p) AS or_list_p, AVG(price*list_ppsf/NULLIF(list_p, 0)) as ppsf , AVG(dom) AS dom, AVG(cumdom) AS cumdom
  FROM TRANS_NUM
-                                      GROUP BY listing_address_zip_code, close_year, close_month ORDER BY listing_address_zip_code, close_year, close_month ) ;
+GROUP BY listing_address_zip_code, close_year, close_month
+ORDER BY listing_address_zip_code, close_year, close_month ) ;
+
+SELECT * FROM zip_mls
 
 
-SELECT * FROM zip_ml
+
+
+/*
+property_type_code_standardized
+
+PROPTY	AP	Apartment
+PROPTY	BD	Boat Dock
+PROPTY	CN	Condo
+PROPTY	CO	Commercial/industrial/Business
+PROPTY	CP	Coop
+PROPTY	FM	Farm
+PROPTY	LD	Lots and Land
+PROPTY	MF	Multi Family (5 >)
+PROPTY	MH	Mobile Home
+PROPTY	RI	Residential Income (2-4 units/Duplex/Triplex/Fourplex)
+PROPTY	SF	Single Family
+PROPTY	TH	Townhouse
+PROPTY	TS	Fractional Ownershp/Timeshare
+
+
+*/
