@@ -39,7 +39,7 @@ CREATE TABLE ACTIVE AS
         listing_date,
         (listing_date + (dom || ' days')::INTERVAL)::DATE,
         '[]'
-    ) AS date_range
+    ) AS active_date_range
 FROM TRANS_NUM);
 
 SELECT * FROM ACTIVE
