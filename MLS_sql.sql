@@ -7,6 +7,10 @@ DROP TABLE IF EXISTS TRANS_NUM
 CREATE TABLE TRANS_NUM AS
 (SELECT
     clip, fips_code, listing_address_zip_code,
+    TO_DATE(SUBSTRING(close_date_standardized FROM 1 FOR 10), 'YYYY-MM-DD') AS close_date,
+    TO_DATE(SUBSTRING(listing_date FROM 1 FOR 10), 'YYYY-MM-DD') AS listing_date,
+    TO_DATE(SUBSTRING(last_listing_date_and_time_standardized FROM 1 FOR 10), 'YYYY-MM-DD') AS last_listing_date,
+    TO_DATE(SUBSTRING(off_market_date_and_time_standardized FROM 1 FOR 10), 'YYYY-MM-DD') AS off_market_date,
     NULLIF(REGEXP_REPLACE(fips_code, '[^0-9.]+', '', 'g'), '')::numeric AS fips,
     NULLIF(REGEXP_REPLACE(listing_address_zip_code, '[^0-9.]+', '', 'g'), '')::numeric AS zip,
     NULLIF(REGEXP_REPLACE(SUBSTRING(listings.close_date_standardized FROM 1 FOR 4),'[^0-9.]+', '', 'g'), '') as close_year,
@@ -21,10 +25,26 @@ CREATE TABLE TRANS_NUM AS
     NULLIF(REGEXP_REPLACE(days_on_market_dom_cumulative, '[^0-9.]+', '', 'g'), '')::numeric AS cumdom
 FROM   mls.listings
 WHERE listing_status_category_code_standardized='S' AND
+      --choose the type of property
       (property_type_code_standardized='CN' OR property_type_code_standardized='SF' OR  property_type_code_standardized='TH'   )
 );
 
+--create an active date range
 
+DROP TABLE IF EXISTS ACTIVE
+CREATE TABLE ACTIVE AS
+(SELECT clip, fips_code, listing_address_zip_code, dom, listing_date, close_date,
+        CASE
+        WHEN listing_date < close_date
+        THEN daterange(listing_date, close_date, '[]')
+        ELSE NULL
+    END AS date_range
+
+FROM TRANS_NUM);
+
+SELECT * FROM ACTIVE
+
+-- going form here to # of active per month --I AM STUCK!
 ---collpase----
 
 DROP TABLE IF EXISTS zip_mls2;
