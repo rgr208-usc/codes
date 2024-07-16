@@ -33,13 +33,13 @@ WHERE listing_status_category_code_standardized='S' AND
 
 DROP TABLE IF EXISTS ACTIVE
 CREATE TABLE ACTIVE AS
-(SELECT clip, fips_code, listing_address_zip_code, dom, listing_date, close_date,
-        CASE
-        WHEN listing_date < close_date
-        THEN daterange(listing_date, close_date, '[]')
-        ELSE NULL
-    END AS date_range
-
+(SELECT clip, fips_code, listing_address_zip_code, dom, listing_date,
+   (listing_date + (dom || ' days')::INTERVAL)::DATE AS end_listing_date,
+       daterange(
+        listing_date,
+        (listing_date + (dom || ' days')::INTERVAL)::DATE,
+        '[]'
+    ) AS date_range
 FROM TRANS_NUM);
 
 SELECT * FROM ACTIVE
