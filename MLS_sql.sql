@@ -147,6 +147,7 @@ DROP TABLE IF EXISTS zip
 CREATE TABLE zip AS
 (
     SELECT
+      fips,
       zip_mls.listing_address_zip_code as zip_code,
       zip_mls.month,
       zip_mls.year,
@@ -164,6 +165,11 @@ CREATE TABLE zip AS
         AND zip_mls.month::INTEGER = zip_listing.month
         AND zip_mls.year::INTEGER = zip_listing.year
     )
+    WHERE zip_mls.listing_address_zip_code !=''
+    ORDER BY
+        zip_mls.listing_address_zip_code,
+        year,
+        month
 );
 
 SELECT * FROM zip
