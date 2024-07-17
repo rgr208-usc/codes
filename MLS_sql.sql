@@ -13,8 +13,8 @@ CREATE TABLE TRANS_NUM AS
     TO_DATE(SUBSTRING(off_market_date_and_time_standardized FROM 1 FOR 10), 'YYYY-MM-DD') AS off_market_date,
     NULLIF(REGEXP_REPLACE(fips_code, '[^0-9.]+', '', 'g'), '')::numeric AS fips,
     NULLIF(REGEXP_REPLACE(listing_address_zip_code, '[^0-9.]+', '', 'g'), '')::numeric AS zip,
-    NULLIF(REGEXP_REPLACE(SUBSTRING(listings.close_date_standardized FROM 1 FOR 4),'[^0-9.]+', '', 'g'), '') as close_year,
-    NULLIF(REGEXP_REPLACE(SUBSTRING(listings.close_date_standardized FROM 6 FOR 2),'[^0-9.]+', '', 'g'), '') as close_month,
+    NULLIF(REGEXP_REPLACE(SUBSTRING(listings.close_date_standardized FROM 1 FOR 4),'[^0-9.]+', '', 'g'), '') as year,
+    NULLIF(REGEXP_REPLACE(SUBSTRING(listings.close_date_standardized FROM 6 FOR 2),'[^0-9.]+', '', 'g'), '') as month,
     NULLIF(REGEXP_REPLACE(SUBSTRING(listing_date FROM 1 FOR 4),'[^0-9.]+', '', 'g'), '') as list_year,
     NULLIF(REGEXP_REPLACE(SUBSTRING(listing_date FROM 6 FOR 2),'[^0-9.]+', '', 'g'), '') as list_month,
     NULLIF(REGEXP_REPLACE(close_price, '[^0-9.]+', '', 'g'), '')::numeric AS price,
@@ -36,8 +36,8 @@ CREATE TABLE zip_mls AS
 (
     SELECT
         listing_address_zip_code,
-        close_year,
-        close_month,
+        year,
+        month,
         COUNT(fips_code) AS listings,
         AVG(fips)     AS fips,
         percentile_cont(0.5) WITHIN GROUP (ORDER BY price) AS price,
@@ -50,12 +50,12 @@ CREATE TABLE zip_mls AS
         TRANS_NUM
     GROUP BY
         listing_address_zip_code,
-        close_year,
-        close_month
+        year,
+        month
     ORDER BY
         listing_address_zip_code,
-        close_year,
-        close_month
+        year,
+        month
 );
 
 
@@ -119,13 +119,13 @@ BEGIN
 END $$;
 
 ---Merge all tables to be checked seems OK
-DROP TABLE IF EXISTS zip_mls_combined
+DROP TABLE IF EXISTS zip_listing
     DO $$
 DECLARE
     year INT;
     month INT;
     table_name TEXT;
-    sql TEXT := 'CREATE TABLE zip_mls_combined AS ';
+    sql TEXT := 'CREATE TABLE zip_listing AS ';
 BEGIN
     FOR year IN 2020..2023 LOOP
         FOR month IN 1..12 LOOP
@@ -140,6 +140,33 @@ BEGIN
     -- Execute the final SQL statement
     EXECUTE sql;
 END $$;
+
+--Merge
+
+DROP TABLE IF EXISTS zip
+CREATE TABLE zip AS
+(
+    SELECT
+      zip_mls.listing_address_zip_code as zip_code,
+      zip_mls.month,
+      zip_mls.year,
+        price,
+        active_listing,
+        list_p,
+        or_list_p,
+        ppsf,
+         dom,
+         cumdom
+    FROM zip_mls
+    INNER JOIN zip_listing
+    ON (
+        zip_mls.listing_address_zip_code = zip_listing.listing_address_zip_code
+        AND zip_mls.month::INTEGER = zip_listing.month
+        AND zip_mls.year::INTEGER = zip_listing.year
+    )
+);
+
+SELECT * FROM zip
 
 /*
 property_type_code_standardized
