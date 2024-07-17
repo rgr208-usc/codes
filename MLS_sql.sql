@@ -59,7 +59,7 @@ CREATE TABLE zip_mls2 AS
 );
 
 
---create an active date range
+--create an active listing data range using listing dates and dom
 
 DROP TABLE IF EXISTS ACTIVE
 CREATE TABLE ACTIVE AS
@@ -73,6 +73,78 @@ CREATE TABLE ACTIVE AS
 FROM TRANS_NUM
     ---make sure open ended range correspond to active listing not missing dom
 WHERE dom IS NOT NULL OR listing_status_category_code_standardized='A');
+
+---The code below sees to work but need to check
+
+DROP TABLE IF EXISTS consolidated_zip_mls;
+CREATE TABLE consolidated_zip_mls AS
+WITH month_year AS (
+    SELECT generate_series(2020, 2023) AS year,
+           generate_series(1, 12) AS month
+)
+SELECT
+    a.listing_address_zip_code,
+    my.year,
+    my.month,
+    COUNT(a.clip) AS active_listing
+FROM
+    month_year my
+LEFT JOIN
+    active a ON a.active_date_range && daterange(
+        DATE (my.year || '-' || lpad(my.month::text, 2, '0') || '-01'),
+        (DATE (my.year || '-' || lpad(my.month::text, 2, '0') || '-01') + INTERVAL '1 month')::DATE,
+        '[]'
+    )
+GROUP BY
+    a.listing_address_zip_code, my.year, my.month
+ORDER BY
+    a.listing_address_zip_code, my.year, my.month;
+
+
+SELECT * FROM consolidated_zip_mls
+
+
+/*
+property_type_code_standardized
+
+PROPTY	AP	Apartment
+PROPTY	BD	Boat Dock
+PROPTY	CN	Condo
+PROPTY	CO	Commercial/industrial/Business
+PROPTY	CP	Coop
+PROPTY	FM	Farm
+PROPTY	LD	Lots and Land
+PROPTY	MF	Multi Family (5 >)
+PROPTY	MH	Mobile Home
+PROPTY	RI	Residential Income (2-4 units/Duplex/Triplex/Fourplex)
+PROPTY	SF	Single Family
+PROPTY	TH	Townhouse
+PROPTY	TS	Fractional Ownershp/Timeshare
+
+
+*/
+
+/*
+Los Angeles
+
+1. Los Angeles County, California: FIPS code 06037
+2. Orange County, California: FIPS code 06059
+3. Riverside County, California: FIPS code 06065
+4. San Bernardino County, California: FIPS code 06071
+5. Ventura County, California: FIPS code 06111
+
+
+1. San Francisco County, California: FIPS code 06075
+2. Alameda County, California: FIPS code 06001
+3. Contra Costa County, California: FIPS code 06013
+4. San Mateo County, California: FIPS code 06081
+5. Marin County, California: FIPS code 06041
+
+
+*/
+
+/*
+
 
 
 --The ideal would be to creat a loop
@@ -99,6 +171,8 @@ GROUP BY
     listing_address_zip_code
 ORDER BY
     listing_address_zip_code;
+
+
 
 
 DO $$
@@ -145,70 +219,4 @@ BEGIN
 END $$;
 
 
-
-DROP TABLE IF EXISTS consolidated_zip_mls;
-
-CREATE TABLE consolidated_zip_mls AS
-WITH month_year AS (
-    SELECT generate_series(2020, 2023) AS year,
-           generate_series(1, 12) AS month
-)
-SELECT
-    a.listing_address_zip_code,
-    my.year,
-    my.month,
-    COUNT(a.clip) AS active_listing
-FROM
-    month_year my
-LEFT JOIN
-    active a ON a.active_date_range && daterange(
-        DATE (my.year || '-' || lpad(my.month::text, 2, '0') || '-01'),
-        (DATE (my.year || '-' || lpad(my.month::text, 2, '0') || '-01') + INTERVAL '1 month')::DATE,
-        '[]'
-    )
-GROUP BY
-    a.listing_address_zip_code, my.year, my.month
-ORDER BY
-    a.listing_address_zip_code, my.year, my.month;
-
-
-SELECT * FROM zip_mls_2023_12
-
-/*
-property_type_code_standardized
-
-PROPTY	AP	Apartment
-PROPTY	BD	Boat Dock
-PROPTY	CN	Condo
-PROPTY	CO	Commercial/industrial/Business
-PROPTY	CP	Coop
-PROPTY	FM	Farm
-PROPTY	LD	Lots and Land
-PROPTY	MF	Multi Family (5 >)
-PROPTY	MH	Mobile Home
-PROPTY	RI	Residential Income (2-4 units/Duplex/Triplex/Fourplex)
-PROPTY	SF	Single Family
-PROPTY	TH	Townhouse
-PROPTY	TS	Fractional Ownershp/Timeshare
-
-
-*/
-
-/*
-Los Angeles
-
-1. Los Angeles County, California: FIPS code 06037
-2. Orange County, California: FIPS code 06059
-3. Riverside County, California: FIPS code 06065
-4. San Bernardino County, California: FIPS code 06071
-5. Ventura County, California: FIPS code 06111
-
-
-1. San Francisco County, California: FIPS code 06075
-2. Alameda County, California: FIPS code 06001
-3. Contra Costa County, California: FIPS code 06013
-4. San Mateo County, California: FIPS code 06081
-5. Marin County, California: FIPS code 06041
-
-
-*/
+ */
