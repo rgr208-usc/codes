@@ -6,7 +6,7 @@
 DROP TABLE IF EXISTS TRANS_NUM
 CREATE TABLE TRANS_NUM AS
 (SELECT
-    clip, fips_code, listing_address_zip_code,
+    clip, fips_code, listing_address_zip_code, listing_status_category_code_standardized,
     TO_DATE(SUBSTRING(close_date_standardized FROM 1 FOR 10), 'YYYY-MM-DD') AS close_date,
     TO_DATE(SUBSTRING(listing_date FROM 1 FOR 10), 'YYYY-MM-DD') AS listing_date,
     TO_DATE(SUBSTRING(last_listing_date_and_time_standardized FROM 1 FOR 10), 'YYYY-MM-DD') AS last_listing_date,
@@ -40,12 +40,21 @@ CREATE TABLE ACTIVE AS
         (listing_date + (dom || ' days')::INTERVAL)::DATE,
         '[]'
     ) AS active_date_range
-FROM TRANS_NUM);
+FROM TRANS_NUM
+    ---make sure open ended range correspond to active listing not missing dom
+WHERE dom IS NOT NULL OR listing_status_category_code_standardized='A');
+-- going form here to # of active per month --I AM STUCK!
+---collpase----
+-- Add the is_overlap column
+ALTER TABLE active
+ADD COLUMN is_overlap boolean;
+UPDATE active
+SET is_overlap = active_date_range && daterange('2024-01-01', '2024-01-31', '[]');
+
 
 SELECT * FROM ACTIVE
 
--- going form here to # of active per month --I AM STUCK!
----collpase----
+
 
 DROP TABLE IF EXISTS zip_mls2;
 CREATE TABLE zip_mls2 AS
