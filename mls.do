@@ -61,6 +61,11 @@ destring temp2, g(year)
 
 drop temp*
 
+
+
+destring active_listing, g(listing)
+drop active_listing
+
 merge m:1 ZIP_CODE using zipcodes
 keep if _merge==3
 
@@ -74,9 +79,9 @@ format month2 %tm
 
 tsset zip month2
 
-drop d_price
 
-foreach var of varlist price active_listing list_p or_list_p ppsf dom cumdom{
+
+foreach var of varlist price-cumdom{
 	g d_`var'=`var'/l24.`var'-1
 }
 
