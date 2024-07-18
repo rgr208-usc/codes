@@ -2,13 +2,18 @@
 /*
 Los Angeles
 
+LA MSA
+
 1. Los Angeles County, California: FIPS code 06037
 2. Orange County, California: FIPS code 06059
+
++LA CBSA
+
 3. Riverside County, California: FIPS code 06065
 4. San Bernardino County, California: FIPS code 06071
 5. Ventura County, California: FIPS code 06111
 
-
+SF MSA
 
 
 1. San Francisco County, California: FIPS code 06075
@@ -16,6 +21,23 @@ Los Angeles
 3. Contra Costa County, California: FIPS code 06013
 4. San Mateo County, California: FIPS code 06081
 5. Marin County, California: FIPS code 06041
+
++ San Jose-----
+
++
+
+SACRAMENTO 
+
+"06067" | "06061" |"06113" | "06017"
+
+Sacramento County, California	1,584,288  
+Placer County, California	423,561
+Yolo County, California	220,544
+El Dorado County, California
+
+
+SAN DIEGO
+
 
 
 
