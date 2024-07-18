@@ -42,6 +42,44 @@ PROPTY	TS	Fractional Ownershp/Timeshare
 
 */
 
+**BASE ON NEW COLLAPSE
+
+clear all
+cd /Users/ranciere/Dropbox/data_sources/Corelogic
+odbc query "PostgreSQLDB", dialog(complete) user(ranciere) password(usc2024!!)
+odbc load, exec ("SELECT * FROM public.zip " )  dsn("postgreSQLDB")
+
+gen str5 ZIP_CODE = substr(zip_code, 1, 5)
+
+destring ZIP_CODE, g(zip)
+
+rename month temp1
+rename year temp2
+
+destring temp1, g(month)
+destring temp2, g(year)
+
+drop temp*
+
+merge m:1 ZIP_CODE using zipcodes
+keep if _merge==3
+
+g day=15
+
+g date=mdy(month,day,year)
+format date %td
+
+gen month2 = mofd(date)
+format month2 %tm
+
+tsset zip month2
+
+drop d_price
+
+foreach var of varlist price active_listing list_p or_list_p ppsf dom cumdom{
+	g d_`var'=`var'/l24.`var'-1
+}
+
 
 
 ***TRANSACTION AND PRICE******
