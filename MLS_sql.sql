@@ -80,7 +80,7 @@ WHERE dom IS NOT NULL OR listing_status_category_code_standardized='A');
     DO $$
 DECLARE
     start_year INTEGER := 2010;  -- Change this to your desired starting year
-    end_year INTEGER := 2023;    -- Change this to your desired ending year
+    end_year INTEGER := 2024;    -- Change this to your desired ending year
     month INTEGER;
     year INTEGER;
     last_day DATE;
@@ -129,7 +129,7 @@ DECLARE
     table_name TEXT;
     sql TEXT := 'CREATE TABLE zip_listing AS ';
 BEGIN
-    FOR year IN 2020..2023 LOOP
+    FOR year IN 2010..2024 LOOP
         FOR month IN 1..12 LOOP
             table_name := 'zip_mls_' || year || '_' || month;
             sql := sql || 'SELECT * FROM ' || table_name || ' UNION ALL ';
