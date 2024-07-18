@@ -36,7 +36,7 @@ CREATE TABLE zip_mls AS
         listing_address_zip_code,
         year,
         month,
-        COUNT(fips_code) AS listings,
+        COUNT(fips_code) AS transactions,
         AVG(fips)     AS fips,
         percentile_cont(0.5) WITHIN GROUP (ORDER BY price) AS price,
         percentile_cont(0.5) WITHIN GROUP (ORDER BY list_p) AS list_p,
@@ -150,6 +150,7 @@ CREATE TABLE zip AS
 (
     SELECT
       fips,
+      transactions,
       zip_mls.listing_address_zip_code as zip_code,
       zip_mls.month,
       zip_mls.year,
@@ -178,6 +179,26 @@ CREATE TABLE zip AS
 );
 
 SELECT * FROM zip
+
+
+
+---CLEANING DROP ALL INTERIM TABLE
+
+
+DO $$
+DECLARE
+    year INT;
+    month INT;
+    table_name TEXT;
+BEGIN
+    -- Iterate over each year and month to drop the tables
+    FOR year IN 2010..2024 LOOP
+        FOR month IN 1..12 LOOP
+            table_name := 'zip_mls_' || year || '_' || month;
+            EXECUTE 'DROP TABLE IF EXISTS ' || table_name;
+        END LOOP;
+    END LOOP;
+END $$;
 
 /*
 property_type_code_standardized
