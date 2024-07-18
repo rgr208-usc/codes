@@ -182,7 +182,7 @@ SELECT * FROM zip
 
 
 
----CLEANING DROP ALL INTERIM TABLE
+---CLEANING--- DROP ALL INTERIM TABLE
 
 
 DO $$
@@ -238,12 +238,21 @@ Los Angeles
 4. San Bernardino County, California: FIPS code 06071
 5. Ventura County, California: FIPS code 06111
 
+San Francisco
 
 1. San Francisco County, California: FIPS code 06075
 2. Alameda County, California: FIPS code 06001
 3. Contra Costa County, California: FIPS code 06013
 4. San Mateo County, California: FIPS code 06081
 5. Marin County, California: FIPS code 06041
+
+San Diego
+San Diego County, 06073
+
+
+Sacramento
+
+
 
 
 */
