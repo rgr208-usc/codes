@@ -9,8 +9,6 @@ CREATE TABLE TRANS_NUM AS
     clip, fips_code, listing_address_zip_code, listing_status_category_code_standardized,
     TO_DATE(SUBSTRING(close_date_standardized FROM 1 FOR 10), 'YYYY-MM-DD') AS close_date,
     TO_DATE(SUBSTRING(listing_date FROM 1 FOR 10), 'YYYY-MM-DD') AS listing_date,
-    TO_DATE(SUBSTRING(last_listing_date_and_time_standardized FROM 1 FOR 10), 'YYYY-MM-DD') AS last_listing_date,
-    TO_DATE(SUBSTRING(off_market_date_and_time_standardized FROM 1 FOR 10), 'YYYY-MM-DD') AS off_market_date,
     NULLIF(REGEXP_REPLACE(fips_code, '[^0-9.]+', '', 'g'), '')::numeric AS fips,
     NULLIF(REGEXP_REPLACE(listing_address_zip_code, '[^0-9.]+', '', 'g'), '')::numeric AS zip,
     NULLIF(REGEXP_REPLACE(SUBSTRING(listings.close_date_standardized FROM 1 FOR 4),'[^0-9.]+', '', 'g'), '') as year,
@@ -44,6 +42,8 @@ CREATE TABLE zip_mls AS
         percentile_cont(0.5) WITHIN GROUP (ORDER BY list_p) AS list_p,
         percentile_cont(0.5) WITHIN GROUP (ORDER BY or_list_p) AS or_list_p,
         percentile_cont(0.5) WITHIN GROUP (ORDER BY price * list_ppsf / NULLIF(list_p, 0)) AS ppsf,
+        percentile_cont(0.5) WITHIN GROUP (ORDER BY list_p/ NULLIF(list_p, 0)) AS l_to_p,
+        percentile_cont(0.5) WITHIN GROUP (ORDER BY or_list_p/ NULLIF(list_p, 0)) AS orl_to_p,
         percentile_cont(0.5) WITHIN GROUP (ORDER BY dom) AS dom,
         percentile_cont(0.5) WITHIN GROUP (ORDER BY cumdom) AS cumdom
     FROM
@@ -75,9 +75,11 @@ FROM TRANS_NUM
 WHERE dom IS NOT NULL OR listing_status_category_code_standardized='A');
 
 ---create a table per month check with manual code at the end
+
+---check if you can go to 2024
     DO $$
 DECLARE
-    start_year INTEGER := 2020;  -- Change this to your desired starting year
+    start_year INTEGER := 2010;  -- Change this to your desired starting year
     end_year INTEGER := 2023;    -- Change this to your desired ending year
     month INTEGER;
     year INTEGER;
@@ -141,7 +143,7 @@ BEGIN
     EXECUTE sql;
 END $$;
 
---Merge
+--Merge with Listings and creating zip
 
 DROP TABLE IF EXISTS zip
 CREATE TABLE zip AS
@@ -155,9 +157,12 @@ CREATE TABLE zip AS
         active_listing,
         list_p,
         or_list_p,
+        l_to_p,
+        orl_to_p,
         ppsf,
-         dom,
-         cumdom
+        dom,
+        cumdom
+--check if you need to have Jan-March 2024
     FROM zip_mls
     INNER JOIN zip_listing
     ON (
@@ -192,6 +197,15 @@ PROPTY	TH	Townhouse
 PROPTY	TS	Fractional Ownershp/Timeshare
 
 
+Listing Category
+
+CdTbl	CdVal	CdDesc
+LSTCAT	A  	ACTIVE
+LSTCAT	D  	DELETED
+LSTCAT	S  	SOLD
+LSTCAT	U  	PENDING
+LSTCAT	X  	EXPIRED (INCLUDES WITHDRAWN, CANCELLED, TERMINATED, INACTIVE, ETC.)
+
 */
 
 /*
@@ -213,10 +227,7 @@ Los Angeles
 
 */
 
-
-
-
-
+/*
 --MANUAL CODEx
 ALTER TABLE active
 ADD COLUMN is_overlap BOOLEAN;
@@ -242,4 +253,4 @@ ORDER BY
     listing_address_zip_code;
 
 SELECT * from zip_mls_check
-
+*/
