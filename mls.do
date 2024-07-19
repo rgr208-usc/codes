@@ -15,6 +15,7 @@ LA MSA
 
 SF MSA
 
+"06075" | "06001" | "06013" | "06081"  | "06041"
 
 1. San Francisco County, California: FIPS code 06075
 2. Alameda County, California: FIPS code 06001
@@ -39,6 +40,7 @@ El Dorado County, California
 SAN DIEGO
 
 
+San Diego County, 06073
 
 
 */
