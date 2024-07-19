@@ -37,3 +37,8 @@ CREATE TABLE collaps1 AS
                                       GROUP BY transaction_year, transaction_month ORDER BY transaction_year,transaction_month ) ;
 
 
+/*Notes
+We recommend using an order of priority of Sale Derived Date > Sale Derived Recording Date > Transaction Batch Date to get the date for each transaction.
+   Transaction batch date is an internal date number and may not be as reliable for some of the older transactions.
+
+
