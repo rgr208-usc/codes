@@ -64,7 +64,7 @@ PROPTY	TS	Fractional Ownershp/Timeshare
 
 */
 
-**BASE ON NEW COLLAPSE
+**BASE ON DG COLLAPSE
 
 clear all
 cd /Users/ranciere/Dropbox/data_sources/Corelogic
@@ -88,6 +88,9 @@ drop temp*
 destring active_listing, g(listing)
 drop active_listing
 
+destring transactions, g(sales)
+drop transactions
+
 merge m:1 ZIP_CODE using zipcodes
 keep if _merge==3
 
@@ -103,13 +106,13 @@ tsset zip month2
 
 
 
-foreach var of varlist price-cumdom{
+foreach var of varlist sales price-cumdom{
 	g d_`var'=`var'/l24.`var'-1
 }
 
 
 
-***TRANSACTION AND PRICE******
+***STATA COLLAPSE TRANSACTION AND PRICE******
 
 clear all
 cd /Users/ranciere/Dropbox/data_sources/Corelogic
