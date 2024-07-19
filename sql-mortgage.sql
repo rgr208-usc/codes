@@ -1,3 +1,31 @@
+
+
+DROP TABLE IF EXISTS test;
+CREATE TABLE test AS
+(SELECT mortgage_interest_rate_type_code, fixed_rate_indicator, variable_rate_loan_indicator FROM mortgage.basics)
+
+SELECT mortgage_interest_rate_type_code, COUNT(*) AS count
+FROM mortgage.basics
+WHERE mortgage_interest_rate_type_code!=''
+GROUP BY mortgage_interest_rate_type_code
+ORDER BY count DESC
+;
+
+SELECT fixed_rate_indicator, COUNT(*) AS count
+FROM mortgage.basics
+WHERE fixed_rate_indicator!=''
+GROUP BY fixed_rate_indicator
+ORDER BY count DESC;
+
+
+
+SELECT variable_rider_indicator, COUNT(*) AS count
+FROM mortgage.basics
+WHERE  variable_rider_indicator!=''
+GROUP BY  variable_rider_indicator
+ORDER BY count DESC;
+
+
 DROP TABLE output_table
 CREATE TABLE output_table AS
 (SELECT clip, fips_code, transaction_batch_date, SUBSTRING(transaction_batch_date FROM 1 FOR 4) as transaction_year, SUBSTRING(transaction_batch_date FROM 5 FOR 2)
