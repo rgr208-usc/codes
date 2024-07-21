@@ -71,7 +71,7 @@ PROPTY	TS	Fractional Ownershp/Timeshare
 clear all
 cd /Users/ranciere/Dropbox/data_sources/Corelogic
 odbc query "PostgreSQLDB", dialog(complete) user(ranciere) password(usc2024!!)
-odbc load, exec ("SELECT * FROM public.zip " )  dsn("postgreSQLDB")
+odbc load, exec ("SELECT * FROM public.zip_mls_mortgage " )  dsn("postgreSQLDB")
 
 gen str5 ZIP_CODE = substr(zip_code, 1, 5)
 
@@ -108,7 +108,7 @@ tsset zip month2
 
 
 
-foreach var of varlist sales price-cumdom{
+foreach var of varlist sales price-amount{
 	g d_`var'=`var'/l24.`var'-1
 }
 
