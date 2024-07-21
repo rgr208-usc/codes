@@ -20,6 +20,7 @@ CREATE TABLE Mortgage_Num AS
             property_indicator_code___static = '21'
          OR property_indicator_code___static = '22') AND  (mortgage_loan_type_code='CNV') AND (fixed_rate_indicator!=''));
 ---
+--I could create2
 
 DROP TABLE IF EXISTS zip_mortgage;
 CREATE TABLE zip_mortgage AS
