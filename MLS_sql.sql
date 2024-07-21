@@ -6,7 +6,7 @@
 DROP TABLE IF EXISTS TRANS_NUM
 CREATE TABLE TRANS_NUM AS
 (SELECT
-    clip, fips_code, listing_address_zip_code, listing_status_category_code_standardized,
+    clip, fips_code, SUBSTRING(listing_address_zip_code FROM 1 FOR 5) as listing_address_zip_code , listing_status_category_code_standardized,property_type_code_standardized,
     TO_DATE(SUBSTRING(close_date_standardized FROM 1 FOR 10), 'YYYY-MM-DD') AS close_date,
     TO_DATE(SUBSTRING(listing_date FROM 1 FOR 10), 'YYYY-MM-DD') AS listing_date,
     NULLIF(REGEXP_REPLACE(fips_code, '[^0-9.]+', '', 'g'), '')::numeric AS fips,
