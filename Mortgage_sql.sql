@@ -1,8 +1,3 @@
-
-
-
-
-
 DROP TABLE IF EXISTS Mortgage_Num;
 CREATE TABLE Mortgage_Num AS
     (SELECT clip,SUBSTRING( deed_situs_zip_code___static FROM 1 FOR 5) as zip_code,
@@ -14,6 +9,7 @@ CREATE TABLE Mortgage_Num AS
         multifamily_rider_indicator,condominium_rider_indicator,second_home_rider_indicator,
         variable_rate_loan_indicator, fixed_rate_indicator,
             NULLIF(REGEXP_REPLACE(fips_code, '[^0-9.]+', '', 'g'), '') ::numeric AS fips,
+            NULLIF(REGEXP_REPLACE(fixed_rate_indicator, '[^0-9.]+', '', 'g'), '') ::numeric AS fix,
             NULLIF(REGEXP_REPLACE(mortgage_amount, '[^0-9.]+', '', 'g'), '') ::numeric amount,
             NULLIF(REGEXP_REPLACE(SUBSTRING(mortgage_recording_date FROM 1 FOR 4),'[^0-9.]+', '', 'g'), '')::integer as year,
             NULLIF(REGEXP_REPLACE(SUBSTRING(mortgage_recording_date FROM 5 FOR 2),'[^0-9.]+', '', 'g'), '')::integer  as month,
@@ -23,8 +19,6 @@ CREATE TABLE Mortgage_Num AS
      WHERE (property_indicator_code___static = '10' OR property_indicator_code___static = '11' OR
             property_indicator_code___static = '21'
          OR property_indicator_code___static = '22') AND  (mortgage_loan_type_code='CNV') AND (fixed_rate_indicator!=''));
-
-
 ---
 
 DROP TABLE IF EXISTS zip_mortgage;
@@ -34,12 +28,12 @@ CREATE TABLE zip_mortgage AS
        zip_code,
         year,
         month,
-       COUNT(fixed_rate_indicator) AS mortgages,
+      CAST(COUNT(fix)AS INTEGER) AS mortgages,
        COUNT(CASE WHEN  mortgage_type_code = 'P' THEN 1 END) AS purchases,
        COUNT(CASE WHEN  mortgage_type_code = 'R' THEN 1 END) AS refinances,
        COUNT(CASE WHEN  mortgage_type_code = 'J' THEN 1 END) AS junior,
-       COUNT(CASE WHEN fixed_rate_indicator = '0' THEN 1 END) AS fix_mortgages,
-       COUNT(CASE WHEN fixed_rate_indicator = '0' THEN 1 END) AS var_mortgages,
+      COUNT(CASE WHEN fix = 1 THEN 1 END) AS fix_mortgages,
+      COUNT(CASE WHEN fix = 0 THEN 1 END) AS var_mortgages,
        AVG(fips) AS fips,
        percentile_cont(0.5) WITHIN GROUP (ORDER BY rate) AS rate,
        percentile_cont(0.5) WITHIN GROUP (ORDER BY amount) AS amount
@@ -58,9 +52,9 @@ CREATE TABLE zip_mortgage AS
 
 SELECT * FROM zip_mortgage
 
+    ---zip merge an alternative is to do a clip merge at individual level
 
-
-DROP TABLE IF EXISTS zip_mls_mortgage
+DROP TABLE IF EXISTS zip_mls_mortgage;
 CREATE TABLE zip_mls_mortgage AS
 (
     SELECT
