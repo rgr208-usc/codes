@@ -1,12 +1,10 @@
 DROP TABLE IF EXISTS Mortgage_Num;
-
----alignement of the zip address MLS
+---try to complete missing zip using mls - not sure it is worth it it adds about 15' run time
 CREATE TABLE Mortgage_Num AS
     (SELECT mortgage.basics.clip,
-          Trans_Num.clip as clip_mls,
+         mls.listings.clip as clip_mls,
           --use zip MLS except if zip missing
-           COALESCE(NULLIF(Trans_Num.listing_address_zip_code, ''), SUBSTRING( deed_situs_zip_code___static FROM 1 FOR 5) ) AS zip_mls,
-           Trans_Num.property_type_code_standardized,
+           COALESCE(NULLIF(SUBSTRING( deed_situs_zip_code___static FROM 1 FOR 5), ''), SUBSTRING(mls.listings.listing_address_zip_code FROM 1 FOR 5) ) AS zip,
             SUBSTRING( deed_situs_zip_code___static FROM 1 FOR 5) as zip_code,
        mortgage_type_code, --PURCHASE, REFI, JUNIOR, P,R,J
        mortgage_purpose_code,  --F (First Mortgage), see below
@@ -22,8 +20,8 @@ CREATE TABLE Mortgage_Num AS
             NULLIF(REGEXP_REPLACE(SUBSTRING(mortgage_recording_date FROM 5 FOR 2),'[^0-9.]+', '', 'g'), '')::integer  as month,
             NULLIF(REGEXP_REPLACE(mortgage_interest_rate, '[^0-9.]+', '', 'g'), '') ::numeric AS rate
      FROM mortgage.basics
-     INNER JOIN Trans_num
-     ON(mortgage.basics.clip=Trans_Num.clip
+     INNER JOIN mls.listings
+     ON(mortgage.basics.clip=mls.listings.clip
       )
       WHERE property_indicator_code___static IN ('10', '11', '21', '22')
         AND  mortgage_loan_type_code='CNV' AND fixed_rate_indicator!=''
@@ -31,9 +29,6 @@ CREATE TABLE Mortgage_Num AS
      );
 
 SELECT * FROM Mortgage_Num
-     ---if we want to align property type m
-        --(property_type_code_standardized='CN' OR property_type_code_standardized='SF' OR  property_type_code_standardized='TH'   )
-
 
 
 DROP TABLE IF EXISTS zip_mortgage;
@@ -41,7 +36,7 @@ CREATE TABLE zip_mortgage AS
 (
     SELECT
         ----putt the mortage zip if zip_mls is empty - e.g refinance
-        zip_mls,
+        zip,
         year,
         month,
       CAST(COUNT(fix)AS INTEGER) AS mortgages,
@@ -55,13 +50,13 @@ CREATE TABLE zip_mortgage AS
        percentile_cont(0.5) WITHIN GROUP (ORDER BY amount) AS amount
     FROM
         Mortgage_Num
-    WHERE zip_mls!=''
+    WHERE zip!=''
     GROUP BY
-        zip_mls,
+        zip,
         year,
         month
     ORDER BY
-        zip_mls,
+        zip,
         year,
         month
 );
@@ -99,7 +94,7 @@ CREATE TABLE zip_mls_mortgage AS
     FROM zip
     INNER JOIN zip_mortgage
     ON (
-        zip.zip_code = zip_mortgage.zip_mls
+        zip.zip_code = zip_mortgage.zip
         AND zip.month::INTEGER = zip_mortgage.month
         AND zip.year::INTEGER = zip_mortgage.year
     )
@@ -109,6 +104,8 @@ CREATE TABLE zip_mls_mortgage AS
         year,
         month
 );
+
+SELECT * FROM zip_mls_mortgage
 
 
 
