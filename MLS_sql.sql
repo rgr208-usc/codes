@@ -36,7 +36,7 @@ CREATE TABLE zip_mls AS
         listing_address_zip_code,
         year,
         month,
-        COUNT(fips_code) AS transactions,
+        CAST(COUNT(fips_code)AS INTEGER) AS transactions,
         AVG(fips)     AS fips,
         percentile_cont(0.5) WITHIN GROUP (ORDER BY price) AS price,
         percentile_cont(0.5) WITHIN GROUP (ORDER BY list_p) AS list_p,
@@ -48,6 +48,7 @@ CREATE TABLE zip_mls AS
         percentile_cont(0.5) WITHIN GROUP (ORDER BY cumdom) AS cumdom
     FROM
         TRANS_NUM
+    WHERE listing_address_zip_code!=''
     GROUP BY
         listing_address_zip_code,
         year,
@@ -100,7 +101,7 @@ BEGIN
                     listing_address_zip_code,
                     %s AS year,
                     %s AS month,
-                    COUNT(clip) AS active_listing
+                    CAST(COUNT(clip) AS INTEGER) AS active_listing
                 FROM
                     (
                         SELECT *,
@@ -155,7 +156,7 @@ CREATE TABLE zip AS
       zip_mls.month,
       zip_mls.year,
         price,
-        active_listing,
+        active_listing ,
         list_p,
         or_list_p,
         l_to_p,
