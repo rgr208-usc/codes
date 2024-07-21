@@ -1,4 +1,8 @@
 
+
+
+
+
 DROP TABLE IF EXISTS Mortgage_Num;
 CREATE TABLE Mortgage_Num AS
     (SELECT clip,SUBSTRING( deed_situs_zip_code___static FROM 1 FOR 5) as zip_code,
@@ -19,9 +23,9 @@ CREATE TABLE Mortgage_Num AS
      WHERE (property_indicator_code___static = '10' OR property_indicator_code___static = '11' OR
             property_indicator_code___static = '21'
          OR property_indicator_code___static = '22') AND  (mortgage_loan_type_code='CNV') AND (fixed_rate_indicator!=''));
-SELECT * FROM Mortgage_Num
 
----MERGING WITH MLS OR OWNER TRASNFER--
+
+---
 
 DROP TABLE IF EXISTS zip_mortgage;
 CREATE TABLE zip_mortgage AS
@@ -31,13 +35,17 @@ CREATE TABLE zip_mortgage AS
         year,
         month,
        COUNT(fixed_rate_indicator) AS mortgages,
-       COUNT(CASE WHEN fixed_rate_indicator = '1' THEN 1 END) AS fix_mortgages,
+       COUNT(CASE WHEN  mortgage_type_code = 'P' THEN 1 END) AS purchases,
+       COUNT(CASE WHEN  mortgage_type_code = 'R' THEN 1 END) AS refinances,
+       COUNT(CASE WHEN  mortgage_type_code = 'J' THEN 1 END) AS junior,
+       COUNT(CASE WHEN fixed_rate_indicator = '0' THEN 1 END) AS fix_mortgages,
        COUNT(CASE WHEN fixed_rate_indicator = '0' THEN 1 END) AS var_mortgages,
        AVG(fips) AS fips,
        percentile_cont(0.5) WITHIN GROUP (ORDER BY rate) AS rate,
        percentile_cont(0.5) WITHIN GROUP (ORDER BY amount) AS amount
     FROM
         Mortgage_Num
+    WHERE zip_code!=''
     GROUP BY
           zip_code,
         year,
@@ -47,6 +55,55 @@ CREATE TABLE zip_mortgage AS
         year,
         month
 );
+
+SELECT * FROM zip_mortgage
+
+
+
+DROP TABLE IF EXISTS zip_mls_mortgage
+CREATE TABLE zip_mls_mortgage AS
+(
+    SELECT
+      zip.fips,
+      transactions,
+      zip.zip_code,
+      zip.month,
+      zip.year,
+        price,
+       zip.active_listing,
+        list_p,
+        or_list_p,
+        l_to_p,
+        orl_to_p,
+        ppsf,
+        dom,
+        cumdom,
+        mortgages,
+         purchases,
+         refinances,
+         junior,
+         fix_mortgages,
+        var_mortgages,
+        rate,
+        amount
+--check if you need to have Jan-March 2024
+    FROM zip
+    INNER JOIN zip_mortgage
+    ON (
+        zip.zip_code = zip_mortgage.zip_code
+        AND zip.month::INTEGER = zip_mortgage.month
+        AND zip.year::INTEGER = zip_mortgage.year
+    )
+    WHERE zip.zip_code !=''
+    ORDER BY
+        zip_code,
+        year,
+        month
+);
+
+SELECT * from zip_mls_mortgage
+
+
 /*
  mortgage_purpose_code
 CdTbl	CdVal	CdDesc
