@@ -19,8 +19,28 @@ CREATE TABLE Mortgage_Num AS
      WHERE (property_indicator_code___static = '10' OR property_indicator_code___static = '11' OR
             property_indicator_code___static = '21'
          OR property_indicator_code___static = '22') AND  (mortgage_loan_type_code='CNV') AND (fixed_rate_indicator!=''));
----
---I could create2
+
+
+--Also a test
+
+
+    DROP TABLE IF EXISTS zip_issue
+    CREATE TABLE zip_issue AS
+    (SElECT
+    Mortgage_Num.clip,
+    Mortgage_Num.zip_code,
+    Trans_Num.clip as clip2,
+    Trans_Num.listing_address_zip_code
+    FROM Mortgage_Num
+    INNER JOIN trans_num
+    ON(Mortgage_Num.clip=Trans_Num.clip
+      )
+    )
+
+
+
+
+--I could the merge table on on stet
 
 DROP TABLE IF EXISTS zip_mortgage;
 CREATE TABLE zip_mortgage AS
