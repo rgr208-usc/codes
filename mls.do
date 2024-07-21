@@ -112,7 +112,7 @@ foreach var of varlist sales price-amount{
 	g d_`var'=`var'/l24.`var'-1
 }
 
-
+END
 
 ***STATA COLLAPSE TRANSACTION AND PRICE******
 
