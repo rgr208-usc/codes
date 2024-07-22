@@ -77,21 +77,13 @@ gen str5 ZIP_CODE = substr(zip_code, 1, 5)
 
 destring ZIP_CODE, g(zip)
 
-rename month temp1
-rename year temp2
-
-destring temp1, g(month)
-destring temp2, g(year)
-
-drop temp*
-
-
-
 destring active_listing, g(listing)
 drop active_listing
 
 destring transactions, g(sales)
 drop transactions
+ 
+
 
 merge m:1 ZIP_CODE using zipcodes
 keep if _merge==3
@@ -107,10 +99,21 @@ format month2 %tm
 tsset zip month2
 
 
-
 foreach var of varlist sales price-amount{
 	g d_`var'=`var'/l24.`var'-1
 }
+
+/*model of grapjs
+
+
+spmap transaction using zipcodes_coor.dta if year==2021 & month==7 & zip!=90704 & (fip==06037 | fip==06059 | fip==06111), id(id) fcolor(Reds) title( "TRANSACTION LA/ IRVINE/VENTURA JULY 2021")  clmethod (custom) clbreaks(0 14 29 58 102 144 331)
+spmap transaction using zipcodes_coor.dta if year==2023 & month==7 & zip!=90704 & (fip==06037 | fip==06059 | fip==06111), id(id) fcolor(Reds) title( "TRANSACTION LA/ IRVINE/VENTURA JULY 2023")  clmethod (custom) clbreaks(0 14 29 58 102 144 331)
+
+spmap dtransaction using zipcodes_coor.dta if year==2023 & month==7 & zip!=90704 & (fip==06037 | fip==06059 | fip==06111), id(id) fcolor(Reds) title( "D TRANSACTION LA/ IRVINE/VENTURA JULY 2023") clnumber(7)
+
+
+
+*/
 
 END
 
