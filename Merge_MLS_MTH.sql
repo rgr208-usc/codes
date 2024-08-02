@@ -5,7 +5,7 @@
 DROP TABLE IF EXISTS MLS;
 CREATE TABLE MLS AS
 SELECT
-    clip as clip_mls, fips_code as fips_mls, SUBSTRING(listing_address_zip_code FROM 1 FOR 5) as listing_address_zip_code ,
+    clip as clip_mls, SUBSTRING(listing_address_zip_code FROM 1 FOR 5) as listing_address_zip_code ,
     listing_status_category_code_standardized,property_type_code_standardized,
     TO_DATE(SUBSTRING(close_date_standardized FROM 1 FOR 10), 'YYYY-MM-DD') AS closedate,
     TO_DATE(SUBSTRING(listing_date FROM 1 FOR 10), 'YYYY-MM-DD') AS listing_date,
@@ -53,11 +53,10 @@ SELECT clip as clipm,
 ---MERGE
 
 DROP TABLE IF EXISTS MLS_MTG;
-SELECT *
+CREATE TABLE MLS_MTG AS
+SELECT clip_mls, closedate, mtgdate, price, amount
 FROM MLS
 LEFT JOIN MTG
 ON MLS.clip_mls = MTG.clipm AND
-ABS(DATE_PART('day', MLS.closedate - MTG.mtgdate)) <= 5;
-
-
+ABS(EXTRACT(EPOCH FROM AGE(MLS.closedate, MTG.mtgdate)) / 86400) <= 5;
 
