@@ -6,7 +6,7 @@ DROP TABLE IF EXISTS MLS;
 CREATE TABLE MLS AS
 SELECT
     clip as clip_mls, SUBSTRING(listing_address_zip_code FROM 1 FOR 5) as listing_address_zip_code ,
-    listing_status_category_code_standardized,property_type_code_standardized,
+    listing_status_category_code_standardized,property_type_code_standardized, listing_id, listing_id_standardized,
     TO_DATE(SUBSTRING(close_date_standardized FROM 1 FOR 10), 'YYYY-MM-DD') AS closedate,
     TO_DATE(SUBSTRING(listing_date FROM 1 FOR 10), 'YYYY-MM-DD') AS listing_date,
     NULLIF(REGEXP_REPLACE(fips_code, '[^0-9.]+', '', 'g'), '')::numeric AS fips,
@@ -54,7 +54,7 @@ SELECT clip as clipm,
 
 DROP TABLE IF EXISTS MLS_MTG;
 CREATE TABLE MLS_MTG AS
-SELECT clip_mls, closedate, mtgdate, price, amount,
+SELECT clip_mls, listing_date, closedate, mtgdate, price, amount as mortgage, rate
        amount/ NULLIF(price, 0) as ltv
 FROM MLS
 LEFT JOIN MTG
