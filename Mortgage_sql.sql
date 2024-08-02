@@ -110,8 +110,6 @@ CREATE TABLE zip_mls_mortgage AS
 SELECT * FROM zip_mls_mortgage
 
 
-
-
 /*
  mortgage_purpose_code
 CdTbl	CdVal	CdDesc
