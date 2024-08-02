@@ -1,72 +1,48 @@
 
 
-DROP TABLE IF EXISTS test;
-CREATE TABLE test AS
-(SELECT mortgage_interest_rate_type_code, fixed_rate_indicator, variable_rate_loan_indicator FROM mortgage.basics)
+DROP TABLE IF EXISTS MLS;
+CREATE TABLE MLS AS
+SELECT TO_DATE(SUBSTRING(close_date_standardized FROM 1 FOR 10), 'YYYY-MM-DD') AS closedate
+    FROM mls.listings
+WHERE listing_status_category_code_standardized='S';
 
-SELECT mortgage_interest_rate_type_code, COUNT(*) AS count
-FROM mortgage.basics
-WHERE mortgage_interest_rate_type_code!=''
-GROUP BY mortgage_interest_rate_type_code
-ORDER BY count DESC
+DROP TABLE IF EXISTS MTG;
+CREATE TABLE MTG AS
+SELECT TO_CHAR(TO_DATE(mortgage_recording_date, 'YYYYMMDD'), 'YYYY-MM-DD') AS formatted_date
+    FROM mortgage.basics
+
 ;
 
-SELECT fixed_rate_indicator, COUNT(*) AS count
-FROM mortgage.basics
-WHERE fixed_rate_indicator!=''
-GROUP BY fixed_rate_indicator
-ORDER BY count DESC;
+---
 
 
 
-SELECT variable_rider_indicator, COUNT(*) AS count
-FROM mortgage.basics
-WHERE  variable_rider_indicator!=''
-GROUP BY  variable_rider_indicator
-ORDER BY count DESC;
 
 
-DROP TABLE output_table
-CREATE TABLE output_table AS
-(SELECT clip, fips_code, transaction_batch_date, SUBSTRING(transaction_batch_date FROM 1 FOR 4) as transaction_year, SUBSTRING(transaction_batch_date FROM 5 FOR 2)
-    as transaction_month,
-mortgage_interest_rate_type_code, variable_rate_loan_indicator,
-fixed_rate_indicator, mortgage_type_code,  mortgage_interest_rate,mortgage_amount, conforming_loan_indicator, conventional_loan_indicator, mortgage_arm_index_type,
-mortgage_arm_maximum_interest_rate, mortgage_arm_change_percent_limit
-FROM mortgage.basics WHERE  fips_code='06037' OR fips_code='06059' OR  fips_code='06065' OR  fips_code='06071'  OR fips_code='06111' AND transaction_batch_date!='');
+----DATE CLOSE
 
-/*UPDATE output_table
-SET mortgage_interest_rate ='0' WHERE mortgage_interest_rate ='';*/
-ALTER TABLE output_table
-ALTER COLUMN fixed_rate_indicator TYPE NUMERIC USING fixed_rate_indicator::NUMERIC
-ALTER TABLE output_table
-ALTER COLUMN transaction_year TYPE NUMERIC USING transaction_year::NUMERIC
-ALTER TABLE output_table
-ALTER COLUMN transaction_month TYPE NUMERIC USING transaction_month::NUMERIC
-ALTER TABLE output_table
-ALTER COLUMN variable_rate_loan_indicator TYPE NUMERIC USING variable_rate_loan_indicator::NUMERIC
+
+SELECT
+    o.order_id,
+    o.order_date,
+    s.shipment_id,
+    s.shipment_date
+FROM
+    orders o
+JOIN
+    shipments s
+ON
+    ABS(o.order_date - s.shipment_date) < INTERVAL '10 days';
 
 
 /*
-SELECT
-    mortgage_amount,
-    CASE
-        WHEN mortgage_amount ~ '^[+-]?[0-9]*\.?[0-9]+$' THEN mortgage_amount::NUMERIC
-        ELSE NULL
-    END AS mortgage
-FROM output_table;
+SELECT   zip,
+        COUNT(*) AS count
+FROM Mortgage_Num
+GROUP BY zip
+ORDER BY count DESC;
+
 */
-
-DROP TABLE collaps1
-CREATE TABLE collaps1 AS
-(SELECT transaction_year, transaction_month, AVG(fixed_rate_indicator) AS fix ,
-       AVG(variable_rate_loan_indicator) AS variable
- FROM output_table
-                                      GROUP BY transaction_year, transaction_month ORDER BY transaction_year,transaction_month ) ;
-
-
-/*Notes
-We recommend using an order of priority of Sale Derived Date > Sale Derived Recording Date > Transaction Batch Date to get the date for each transaction.
-   Transaction batch date is an internal date number and may not be as reliable for some of the older transactions.
+ --Sale Derived Date > Sale Derived Recording Date Transaction Batch Date
 
 
