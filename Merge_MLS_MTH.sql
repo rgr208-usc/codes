@@ -54,7 +54,7 @@ SELECT clip as clipm,
 
 DROP TABLE IF EXISTS MLS_MTG;
 CREATE TABLE MLS_MTG AS
-SELECT clip_mls, listing_date, closedate, mtgdate, price, amount as mortgage, rate
+SELECT clip_mls, listing_date, closedate, mtgdate, price, amount as mortgage, rate,
        amount/ NULLIF(price, 0) as ltv
 FROM MLS
 LEFT JOIN MTG
