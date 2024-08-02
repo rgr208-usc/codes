@@ -54,9 +54,9 @@ SELECT clip as clipm,
 
 DROP TABLE IF EXISTS MLS_MTG;
 CREATE TABLE MLS_MTG AS
-SELECT clip_mls, closedate, mtgdate, price, amount
+SELECT clip_mls, closedate, mtgdate, price, amount,
+       amount/ NULLIF(price, 0) as LTV
 FROM MLS
 LEFT JOIN MTG
 ON MLS.clip_mls = MTG.clipm AND
 ABS(EXTRACT(EPOCH FROM AGE(MLS.closedate, MTG.mtgdate)) / 86400) <= 5;
-
