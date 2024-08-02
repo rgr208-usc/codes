@@ -15,20 +15,22 @@ CREATE TABLE Mortgage_Num AS
         variable_rate_loan_indicator, fixed_rate_indicator,
             NULLIF(REGEXP_REPLACE(mortgage.basics.fips_code, '[^0-9.]+', '', 'g'), '') ::numeric AS fips,
             NULLIF(REGEXP_REPLACE(fixed_rate_indicator, '[^0-9.]+', '', 'g'), '') ::numeric AS fix,
-            NULLIF(REGEXP_REPLACE(mortgage_amount, '[^0-9.]+', '', 'g'), '') ::numeric amount,
-            NULLIF(REGEXP_REPLACE(SUBSTRING(mortgage_recording_date FROM 1 FOR 4),'[^0-9.]+', '', 'g'), '')::integer as year,
-            NULLIF(REGEXP_REPLACE(SUBSTRING(mortgage_recording_date FROM 5 FOR 2),'[^0-9.]+', '', 'g'), '')::integer  as month,
+            NULLIF(REGEXP_REPLACE(mortgage_amount, '[^0-9.]+', '', 'g'), '') ::numeric AS amount,
+            NULLIF(REGEXP_REPLACE(SUBSTRING(mortgage_recording_date FROM 1 FOR 4),'[^0-9.]+', '', 'g'), '')::integer AS year,
+            NULLIF(REGEXP_REPLACE(SUBSTRING(mortgage_recording_date FROM 5 FOR 2),'[^0-9.]+', '', 'g'), '')::integer  AS month,
+            NULLIF(REGEXP_REPLACE(SUBSTRING(mortgage_recording_date FROM 7 FOR 2),'[^0-9.]+', '', 'g'), '')::integer  AS day,
             NULLIF(REGEXP_REPLACE(mortgage_interest_rate, '[^0-9.]+', '', 'g'), '') ::numeric AS rate
      FROM mortgage.basics
-     INNER JOIN mls.listings
+     LEFT JOIN mls.listings
      ON(mortgage.basics.clip=mls.listings.clip
       )
       WHERE property_indicator_code___static IN ('10', '11', '21', '22')
-        AND  mortgage_loan_type_code='CNV' AND fixed_rate_indicator!=''
+        AND  mortgage_loan_type_code='CNV' AND fixed_rate_indicator!='' --AND mortgage.basics.clip!=''
     ---Residential Conventional
      );
 
-SELECT * FROM Mortgage_Num
+
+
 
 
 DROP TABLE IF EXISTS zip_mortgage;
