@@ -2,14 +2,20 @@
 /*
 Los Angeles
 
+LA MSA
+
 1. Los Angeles County, California: FIPS code 06037
 2. Orange County, California: FIPS code 06059
+
++LA CBSA
+
 3. Riverside County, California: FIPS code 06065
 4. San Bernardino County, California: FIPS code 06071
 5. Ventura County, California: FIPS code 06111
 
+SF MSA
 
-
+"06075" | "06001" | "06013" | "06081"  | "06041"
 
 1. San Francisco County, California: FIPS code 06075
 2. Alameda County, California: FIPS code 06001
@@ -17,18 +23,108 @@ Los Angeles
 4. San Mateo County, California: FIPS code 06081
 5. Marin County, California: FIPS code 06041
 
++ San Jose-----
+
++
+
+SACRAMENTO 
+
+"06067" | "06061" |"06113" | "06017"
+
+Sacramento County, California	1,584,288  
+Placer County, California	423,561
+Yolo County, California	220,544
+El Dorado County, California
+
+
+SAN DIEGO
+
+
+San Diego County, 06073
 
 
 */
 
 
+/*
+property_type_code_standardized
 
-***TRANSACTION AND PRICE******
+PROPTY	AP	Apartment
+PROPTY	BD	Boat Dock
+PROPTY	CN	Condo
+PROPTY	CO	Commercial/industrial/Business
+PROPTY	CP	Coop
+PROPTY	FM	Farm
+PROPTY	LD	Lots and Land
+PROPTY	MF	Multi Family (5 >)
+PROPTY	MH	Mobile Home
+PROPTY	RI	Residential Income (2-4 units/Duplex/Triplex/Fourplex)
+PROPTY	SF	Single Family
+PROPTY	TH	Townhouse
+PROPTY	TS	Fractional Ownershp/Timeshare
+
+
+*/
+
+**BASE ON DG COLLAPSE
+
+clear all
+cd /Users/ranciere/Dropbox/data_sources/Corelogic
+odbc query "PostgreSQLDB", dialog(complete) user(ranciere) password(usc2024!!)
+odbc load, exec ("SELECT * FROM public.zip_mls_mortgage " )  dsn("postgreSQLDB")
+
+gen str5 ZIP_CODE = substr(zip_code, 1, 5)
+
+destring ZIP_CODE, g(zip)
+
+destring active_listing, g(listing)
+drop active_listing
+
+destring transactions, g(sales)
+drop transactions
+ 
+
+
+merge m:1 ZIP_CODE using zipcodes
+keep if _merge==3
+
+g day=15
+
+g date=mdy(month,day,year)
+format date %td
+
+gen month2 = mofd(date)
+format month2 %tm
+
+tsset zip month2
+
+
+foreach var of varlist sales price-amount{
+	g d_`var'=`var'/l24.`var'-1
+}
+
+/*model of grapjs
+
+
+spmap transaction using zipcodes_coor.dta if year==2021 & month==7 & zip!=90704 & (fip==06037 | fip==06059 | fip==06111), id(id) fcolor(Reds) title( "TRANSACTION LA/ IRVINE/VENTURA JULY 2021")  clmethod (custom) clbreaks(0 14 29 58 102 144 331)
+spmap transaction using zipcodes_coor.dta if year==2023 & month==7 & zip!=90704 & (fip==06037 | fip==06059 | fip==06111), id(id) fcolor(Reds) title( "TRANSACTION LA/ IRVINE/VENTURA JULY 2023")  clmethod (custom) clbreaks(0 14 29 58 102 144 331)
+
+spmap dtransaction using zipcodes_coor.dta if year==2023 & month==7 & zip!=90704 & (fip==06037 | fip==06059 | fip==06111), id(id) fcolor(Reds) title( "D TRANSACTION LA/ IRVINE/VENTURA JULY 2023") clnumber(7)
+
+
+
+*/
+
+END
+
+***STATA COLLAPSE TRANSACTION AND PRICE******
 
 clear all
 cd /Users/ranciere/Dropbox/data_sources/Corelogic
 odbc query "PostgreSQLDB", dialog(complete) user(ranciere) password(usc2024!!)
 odbc load, exec ("SELECT * FROM public.transaction " )  dsn("postgreSQLDB")
+
+keep if property_type_code_standardized=="SF" | property_type_code_standardized=="TH" | property_type_code_standardized=="CN"
 
 
 gen str5 ZIP_CODE = substr(listing_address_zip_code, 1, 5)
@@ -76,7 +172,18 @@ format month2 %tm
 
 tsset zip month2
 
-*spmap ppsf using zipcodes_coor.dta if year==2021 & month==7 & (fip==06037 | fip==06059 | fip==06111) & transaction>10 & ppsf>10, id(id) fcolor(Reds) title( "PPSF LA/ IRVINE / VENTURA JULY 2021")
+foreach var of varlist  transaction list_ppsf ppsf listing_price price dom cumdom l_to_p ol_to_p{
+	g d_`var'=`var'/l24.`var'-1
+}
+
+spmap transaction using zipcodes_coor.dta if year==2021 & month==7 & zip!=90704 & (fip==06037 | fip==06059 | fip==06111), id(id) fcolor(Reds) title( "TRANSACTION LA/ IRVINE/VENTURA JULY 2021")  clmethod (custom) clbreaks(0 14 29 58 102 144 331)
+spmap transaction using zipcodes_coor.dta if year==2023 & month==7 & zip!=90704 & (fip==06037 | fip==06059 | fip==06111), id(id) fcolor(Reds) title( "TRANSACTION LA/ IRVINE/VENTURA JULY 2023")  clmethod (custom) clbreaks(0 14 29 58 102 144 331)
+
+spmap dtransaction using zipcodes_coor.dta if year==2023 & month==7 & zip!=90704 & (fip==06037 | fip==06059 | fip==06111), id(id) fcolor(Reds) title( "D TRANSACTION LA/ IRVINE/VENTURA JULY 2023") clnumber(7)
+
+
+
+
 
 save transaction, replace
 
