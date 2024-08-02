@@ -55,7 +55,7 @@ SELECT clip as clipm,
 DROP TABLE IF EXISTS MLS_MTG;
 CREATE TABLE MLS_MTG AS
 SELECT clip_mls, closedate, mtgdate, price, amount,
-       amount/ NULLIF(price, 0) as LTV
+       amount/ NULLIF(price, 0) as ltv
 FROM MLS
 LEFT JOIN MTG
 ON MLS.clip_mls = MTG.clipm AND
