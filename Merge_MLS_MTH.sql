@@ -78,25 +78,16 @@ SELECT clip_mls, listing_id,  orginal_listing_date,  listing_date, closedate, mt
 FROM MLS
 LEFT JOIN MTG
 ON MLS.clip_mls = MTG.clipm AND
-ABS(EXTRACT(EPOCH FROM AGE(MLS.closedate, MTG.mtgdate)) / 86400) <= 5;
+ABS(EXTRACT(EPOCH FROM AGE(MLS.closedate, MTG.mtgdate)) / 86400) <= 10;
 
-----Duplicated issues
+----merge
 
-
-SELECT clip_mls, listing_id, closedate, orginal_listing_date, listing_date, price, ltv FROM MLS_MTG
-
-DROP TABLE IF EXISTS TEMP;
-CREATE TABLE TEMP AS
-SELECT clip_mls, closedate, listing_date, price, COUNT(*) as counta
-FROM MLS
-GROUP BY clip_mls, closedate, listing_date, price
-HAVING COUNT(*) > 1;
-
-SELECT counta, count(*)
-FROM TEMP
-GROUP BY counta
+SELECT count(closedate)
+FROM MLS_MTG
 ORDER BY count DESC;
 
-SELECT COUNT(*) AS total_rows
-FROM MLS
+
+SELECT count(mtgdate)
+FROM MLS_MTG
+ORDER BY count DESC;
 
