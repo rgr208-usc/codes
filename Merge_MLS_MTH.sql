@@ -69,7 +69,7 @@ SELECT clip as clipm,
 ;
 
 
----MERGE
+---MERGE-- checked with Mortgage_Recorded_Date
 
 DROP TABLE IF EXISTS MLS_MTG;
 CREATE TABLE MLS_MTG AS
@@ -78,9 +78,9 @@ SELECT clip_mls, listing_id,  orginal_listing_date,  listing_date, closedate, mt
 FROM MLS
 LEFT JOIN MTG
 ON MLS.clip_mls = MTG.clipm AND
-ABS(EXTRACT(EPOCH FROM AGE(MLS.closedate, MTG.mtgdate)) / 86400) <= 10;
+ABS(EXTRACT(EPOCH FROM AGE(MLS.closedate, MTG.mtgdate)) / 86400) <= 15;
 
-----merge
+----ASSESS THE MERGE
 
 SELECT count(closedate)
 FROM MLS_MTG
