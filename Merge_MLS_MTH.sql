@@ -51,7 +51,7 @@ WHERE id_column IN (
 
 DROP TABLE IF EXISTS MTG;
 CREATE TABLE MTG AS
-SELECT clip as clipm,
+SELECT clip as clip_mtg,
 
        ---choice of mortgage_date vs. mortgage_recprding_date
 
@@ -78,26 +78,49 @@ SELECT clip as clipm,
 
 DROP TABLE IF EXISTS MLS_MTG;
 CREATE TABLE MLS_MTG AS
-SELECT clip_mls, listing_id,  orginal_listing_date,  listing_date, closedate, mtg_date, mtg_r_date, price, amount as mortgage, rate,
-       amount/ NULLIF(price, 0) as ltv
-FROM MLS
-LEFT JOIN MTG
-ON MLS.clip_mls = MTG.clipm AND
-   --we
-(
---ABS(EXTRACT(EPOCH FROM AGE(MLS.closedate, MTG.mtg_date)) / 86400) <= 10
-    --OR
-  ABS(EXTRACT(EPOCH FROM AGE(MLS.closedate, MTG.mtg_r_date)) / 86400) <= 10
-   )
-;
+SELECT
+    m.clip_mls,
+    m.fips,
+    m.listing_id,
+    m.orginal_listing_date,
+    m.listing_date,
+    m.closedate,
+    m.list_p,
+    m.list_ppsf,
+    m.or_list_p,
+    m.dom,
+    m.cumdom,
+    m.price,
+    m.list_p/NULLIF(m.price,0) AS lp_price,
+
+
+    t.clip_mtg,
+    t.mtg_date,
+    t.mtg_r_date,
+    t.amount AS mortgage,
+    t.rate,
+    t.amount / NULLIF(m.price, 0) AS ltv,
+    t.variable_rate_loan_indicator,
+    t.fixed_rate_indicator
+
+FROM
+    MLS m
+LEFT JOIN
+    MTG t
+ON
+    m.clip_mls = t.clip_mtg
+    AND (
+        ABS(EXTRACT(EPOCH FROM AGE(m.closedate, t.mtg_date)) / 86400) <= 5
+        OR
+        ABS(EXTRACT(EPOCH FROM AGE(m.closedate, t.mtg_r_date)) / 86400) <= 5
+    )
+WHERE  m.clip_mls!='';
 
 ----ASSESS THE MERGE
-
 
 SELECT count(closedate)
 FROM MLS_MTG
 WHERE mtg_date IS NOT NULL OR mtg_r_date IS NOT NULL
 ORDER BY count DESC;
-
 
 
