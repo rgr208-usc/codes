@@ -56,7 +56,7 @@ SELECT clip as clipm,
        ---choice of mortgage_date vs. mortgage_recprding_date
 
        TO_DATE( TO_CHAR(TO_DATE(mortgage_recording_date, 'YYYYMMDD'), 'YYYY-MM-DD'),'YYYY-MM-DD')  AS mtg_r_date,
-       TO_DATE( TO_CHAR(TO_DATE(mortgage_recording_date, 'YYYYMMDD'), 'YYYY-MM-DD'),'YYYY-MM-DD')  AS mtg_date,
+       TO_DATE( TO_CHAR(TO_DATE(mortgage_date, 'YYYYMMDD'), 'YYYY-MM-DD'),'YYYY-MM-DD')  AS mtg_date,
        mortgage_type_code, --PURCHASE, REFI, JUNIOR, P,R,J
        mortgage_purpose_code,  --F (First Mortgage), see below
        conforming_loan_indicator,conventional_loan_indicator, refinance_loan_indicator,
@@ -64,9 +64,9 @@ SELECT clip as clipm,
         construction_loan_indicator,equity_loan_indicator,fha_loan_indicator,veterans_administration_loan_indicator,
         multifamily_rider_indicator,condominium_rider_indicator,second_home_rider_indicator,
         variable_rate_loan_indicator, fixed_rate_indicator,
-            NULLIF(REGEXP_REPLACE(mortgage.basics.fips_code, '[^0-9.]+', '', 'g'), '') ::numeric AS fips,
-            NULLIF(REGEXP_REPLACE(fixed_rate_indicator, '[^0-9.]+', '', 'g'), '') ::numeric AS fix,
-            NULLIF(REGEXP_REPLACE(mortgage_amount, '[^0-9.]+', '', 'g'), '') ::numeric AS amount,
+            NULLIF(REGEXP_REPLACE(SUBSTRING(mortgage_date FROM 1 FOR 4),'[^0-9.]+', '', 'g'), '')::integer AS year,
+            NULLIF(REGEXP_REPLACE(SUBSTRING(mortgage_date FROM 5 FOR 2),'[^0-9.]+', '', 'g'), '')::integer  AS month,
+            NULLIF(REGEXP_REPLACE(SUBSTRING(mortgage_date FROM 7 FOR 2),'[^0-9.]+', '', 'g'), '')::integer  AS day,
             NULLIF(REGEXP_REPLACE(mortgage_interest_rate, '[^0-9.]+', '', 'g'), '') ::numeric AS rate
     FROM mortgage.basics
    WHERE property_indicator_code___static IN ('10', '11', '21', '22') AND  mortgage_type_code = 'P'
@@ -82,12 +82,12 @@ SELECT clip_mls, listing_id,  orginal_listing_date,  listing_date, closedate, mt
 FROM MLS
 LEFT JOIN MTG
 ON MLS.clip_mls = MTG.clipm AND
-   --we can combine
---(
--- ABS(EXTRACT(EPOCH FROM AGE(MLS.closedate, MTG.mtg_date)) / 86400) <= 10
-  --   OR
-   ABS(EXTRACT(EPOCH FROM AGE(MLS.closedate, MTG.mtg_r_date)) / 86400) <= 10
-   -- )
+   --we
+(
+ABS(EXTRACT(EPOCH FROM AGE(MLS.closedate, MTG.mtg_date)) / 86400) <= 10
+    OR
+  ABS(EXTRACT(EPOCH FROM AGE(MLS.closedate, MTG.mtg_r_date)) / 86400) <= 10
+   )
 ;
 
 ----ASSESS THE MERGE
@@ -95,7 +95,7 @@ ON MLS.clip_mls = MTG.clipm AND
 
 SELECT count(closedate)
 FROM MLS_MTG
-WHERE mtg_r_date IS NOT NULL --OR mtg_r_date IS NOT NULL
+WHERE mtg_date IS NOT NULL OR mtg_r_date IS NOT NULL
 ORDER BY count DESC;
 
 
