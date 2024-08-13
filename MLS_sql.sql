@@ -5,7 +5,9 @@
 DROP TABLE IF EXISTS TRANS_NUM
 CREATE TABLE TRANS_NUM AS
 (SELECT
-    clip, fips_code, SUBSTRING(listing_address_zip_code FROM 1 FOR 5) as listing_address_zip_code , listing_status_category_code_standardized,property_type_code_standardized,
+    clip, fips_code, SUBSTRING(listing_address_zip_code FROM 1 FOR 5) as listing_address_zip_code ,
+    listing_status_category_code_standardized,property_type_code_standardized,
+    listing_id_standardized, listing_id,
     TO_DATE(SUBSTRING(close_date_standardized FROM 1 FOR 10), 'YYYY-MM-DD') AS close_date,
     TO_DATE(SUBSTRING(listing_date FROM 1 FOR 10), 'YYYY-MM-DD') AS listing_date,
     NULLIF(REGEXP_REPLACE(fips_code, '[^0-9.]+', '', 'g'), '')::numeric AS fips,
@@ -28,8 +30,28 @@ WHERE listing_status_category_code_standardized='S' AND
 );
 
 
-----ADD A
+---- Suppress the duplicates -- by clip listing date close date
 
+--------add an unique id
+ALTER TABLE TRANS_NUM ADD COLUMN id_column SERIAL PRIMARY KEY;
+
+----purging for duplicates (long)
+
+WITH cte AS (
+    SELECT
+        *,
+        ROW_NUMBER() OVER (PARTITION BY clip, listing_date, close_date, list_p, price ORDER BY id_column) as rn
+    FROM TRANS_NUM
+)
+DELETE FROM TRANS_NUM
+WHERE id_column IN (
+    SELECT id_column
+    FROM cte
+    WHERE rn > 1
+);
+
+
+----ADD A
 
 
 DROP TABLE IF EXISTS zip_mls;
@@ -169,7 +191,7 @@ CREATE TABLE zip AS
         cumdom
 --check if you need to have Jan-March 2024
     FROM zip_mls
-    INNER JOIN zip_listing
+    LEFT JOIN zip_listing
     ON (
         zip_mls.listing_address_zip_code = zip_listing.listing_address_zip_code
         AND zip_mls.month::INTEGER = zip_listing.month
@@ -187,7 +209,6 @@ SELECT * FROM zip
 
 
 ---CLEANING--- DROP ALL INTERIM TABLE
-
 
 DO $$
 DECLARE
@@ -287,4 +308,25 @@ ORDER BY
     listing_address_zip_code;
 
 SELECT * from zip_mls_check
+*/
+
+/*
+
+DROP TABLE IF EXISTS TEMP;
+CREATE TABLE TEMP AS
+SELECT clip, zip, listing_date, close_date, list_p , price, COUNT(*) as counta
+--SELECT listing_id_
+FROM trans_num
+WHERE listing_date IS NOT NULL AND zip IS NOT NULL AND clip!='' AND (price!=0 OR listing_status_category_code_standardized='A')
+GROUP BY clip, zip, listing_date, close_date, list_p, price
+--GROUP BY listing_id_standardized
+HAVING COUNT(*) > 1;
+
+SELECT counta, count(*)
+FROM TEMP
+GROUP BY counta
+ORDER BY count DESC;
+
+SELECT COUNT(*) AS total_rows
+FROM   mls.listings
 */
