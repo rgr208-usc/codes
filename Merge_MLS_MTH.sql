@@ -52,7 +52,11 @@ WHERE id_column IN (
 DROP TABLE IF EXISTS MTG;
 CREATE TABLE MTG AS
 SELECT clip as clipm,
-       TO_DATE( TO_CHAR(TO_DATE(mortgage_date, 'YYYYMMDD'), 'YYYY-MM-DD'),'YYYY-MM-DD')  AS mtgdate,
+
+       ---choice of mortgage_date vs. mortgage_recprding_date
+
+       TO_DATE( TO_CHAR(TO_DATE(mortgage_recording_date, 'YYYYMMDD'), 'YYYY-MM-DD'),'YYYY-MM-DD')  AS mtg_r_date,
+       TO_DATE( TO_CHAR(TO_DATE(mortgage_recording_date, 'YYYYMMDD'), 'YYYY-MM-DD'),'YYYY-MM-DD')  AS mtg_date,
        mortgage_type_code, --PURCHASE, REFI, JUNIOR, P,R,J
        mortgage_purpose_code,  --F (First Mortgage), see below
        conforming_loan_indicator,conventional_loan_indicator, refinance_loan_indicator,
@@ -73,21 +77,26 @@ SELECT clip as clipm,
 
 DROP TABLE IF EXISTS MLS_MTG;
 CREATE TABLE MLS_MTG AS
-SELECT clip_mls, listing_id,  orginal_listing_date,  listing_date, closedate, mtgdate, price, amount as mortgage, rate,
+SELECT clip_mls, listing_id,  orginal_listing_date,  listing_date, closedate, mtg_date, mtg_r_date, price, amount as mortgage, rate,
        amount/ NULLIF(price, 0) as ltv
 FROM MLS
 LEFT JOIN MTG
 ON MLS.clip_mls = MTG.clipm AND
-ABS(EXTRACT(EPOCH FROM AGE(MLS.closedate, MTG.mtgdate)) / 86400) <= 15;
+   --we can combine
+--(
+-- ABS(EXTRACT(EPOCH FROM AGE(MLS.closedate, MTG.mtg_date)) / 86400) <= 10
+  --   OR
+   ABS(EXTRACT(EPOCH FROM AGE(MLS.closedate, MTG.mtg_r_date)) / 86400) <= 10
+   -- )
+;
 
 ----ASSESS THE MERGE
 
+
 SELECT count(closedate)
 FROM MLS_MTG
+WHERE mtg_r_date IS NOT NULL --OR mtg_r_date IS NOT NULL
 ORDER BY count DESC;
 
 
-SELECT count(mtgdate)
-FROM MLS_MTG
-ORDER BY count DESC;
 
