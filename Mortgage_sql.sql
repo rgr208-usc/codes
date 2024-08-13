@@ -5,6 +5,7 @@ DROP TABLE IF EXISTS Mortgage_Num;
 CREATE TABLE Mortgage_Num AS
     (SELECT mortgage.basics.clip,
          --mls.listings.clip as clip_mls,
+            -- choice of mortgage date or mortgage recording rate
          mortgage_composite_transaction_id,
          mortgage_sequence_number,
          transaction_batch_sequence_number,
@@ -20,6 +21,9 @@ CREATE TABLE Mortgage_Num AS
             NULLIF(REGEXP_REPLACE(fixed_rate_indicator, '[^0-9.]+', '', 'g'), '') ::numeric AS fix,
             NULLIF(REGEXP_REPLACE(mortgage_amount, '[^0-9.]+', '', 'g'), '') ::numeric AS amount,
             TO_DATE( TO_CHAR(TO_DATE(mortgage_date, 'YYYYMMDD'), 'YYYY-MM-DD'),'YYYY-MM-DD')  AS mtgdate,
+            NULLIF(REGEXP_REPLACE(SUBSTRING(mortgage_date FROM 1 FOR 4),'[^0-9.]+', '', 'g'), '')::integer AS year,
+            NULLIF(REGEXP_REPLACE(SUBSTRING(mortgage_date FROM 5 FOR 2),'[^0-9.]+', '', 'g'), '')::integer  AS month,
+            NULLIF(REGEXP_REPLACE(SUBSTRING(mortgage_date FROM 7 FOR 2),'[^0-9.]+', '', 'g'), '')::integer  AS day,
             NULLIF(REGEXP_REPLACE(mortgage_interest_rate, '[^0-9.]+', '', 'g'), '') ::numeric AS rate
         FROM mortgage.basics
         WHERE mortgage_date!='' AND property_indicator_code___static IN ('10', '11', '21', '22')
