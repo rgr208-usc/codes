@@ -1,38 +1,38 @@
+
+-----try to complete missing zip using mls - not sure it is worth it it adds about 15' run time
+
 DROP TABLE IF EXISTS Mortgage_Num;
----try to complete missing zip using mls - not sure it is worth it it adds about 15' run time
 CREATE TABLE Mortgage_Num AS
     (SELECT mortgage.basics.clip,
-         mls.listings.clip as clip_mls,
-          --use zip MLS except if zip missing
-           COALESCE(NULLIF(SUBSTRING( deed_situs_zip_code___static FROM 1 FOR 5), ''), SUBSTRING(mls.listings.listing_address_zip_code FROM 1 FOR 5) ) AS zip,
-            SUBSTRING( deed_situs_zip_code___static FROM 1 FOR 5) as zip_code,
-       mortgage_type_code, --PURCHASE, REFI, JUNIOR, P,R,J
-       mortgage_purpose_code,  --F (First Mortgage), see below
-       conforming_loan_indicator,conventional_loan_indicator, refinance_loan_indicator,
-       government_sponsored_enterprise_gse_eligible_mortgage_indicator,
-        construction_loan_indicator,equity_loan_indicator,fha_loan_indicator,veterans_administration_loan_indicator,
-        multifamily_rider_indicator,condominium_rider_indicator,second_home_rider_indicator,
-        variable_rate_loan_indicator, fixed_rate_indicator,
+         --mls.listings.clip as clip_mls,
+         mortgage_composite_transaction_id,
+         mortgage_sequence_number,
+         transaction_batch_sequence_number,
+          mortgage_type_code, --PURCHASE, REFI, JUNIOR, P,R,J
+          mortgage_purpose_code,  --F (First Mortgage), see below
+          conforming_loan_indicator,conventional_loan_indicator, refinance_loan_indicator,
+           government_sponsored_enterprise_gse_eligible_mortgage_indicator,
+           construction_loan_indicator,equity_loan_indicator,fha_loan_indicator,veterans_administration_loan_indicator,
+          multifamily_rider_indicator,condominium_rider_indicator,second_home_rider_indicator,
+        variable_rate_loan_indicator, fixed_rate_indicator, mortgage_date, mortgage_recording_date,
+            SUBSTRING( deed_situs_zip_code___static FROM 1 FOR 5) as zip,
             NULLIF(REGEXP_REPLACE(mortgage.basics.fips_code, '[^0-9.]+', '', 'g'), '') ::numeric AS fips,
             NULLIF(REGEXP_REPLACE(fixed_rate_indicator, '[^0-9.]+', '', 'g'), '') ::numeric AS fix,
             NULLIF(REGEXP_REPLACE(mortgage_amount, '[^0-9.]+', '', 'g'), '') ::numeric AS amount,
-            NULLIF(REGEXP_REPLACE(SUBSTRING(mortgage_recording_date FROM 1 FOR 4),'[^0-9.]+', '', 'g'), '')::integer AS year,
-            NULLIF(REGEXP_REPLACE(SUBSTRING(mortgage_recording_date FROM 5 FOR 2),'[^0-9.]+', '', 'g'), '')::integer  AS month,
-            NULLIF(REGEXP_REPLACE(SUBSTRING(mortgage_recording_date FROM 7 FOR 2),'[^0-9.]+', '', 'g'), '')::integer  AS day,
+            TO_DATE( TO_CHAR(TO_DATE(mortgage_date, 'YYYYMMDD'), 'YYYY-MM-DD'),'YYYY-MM-DD')  AS mtgdate,
             NULLIF(REGEXP_REPLACE(mortgage_interest_rate, '[^0-9.]+', '', 'g'), '') ::numeric AS rate
-     FROM mortgage.basics
-     LEFT JOIN mls.listings
-     ON(mortgage.basics.clip=mls.listings.clip
-      )
-      WHERE property_indicator_code___static IN ('10', '11', '21', '22')
+        FROM mortgage.basics
+        WHERE mortgage_date!='' AND property_indicator_code___static IN ('10', '11', '21', '22')
         AND  mortgage_loan_type_code='CNV' AND fixed_rate_indicator!='' --AND mortgage.basics.clip!=''
     ---Residential Conventional
      );
 
+SELECT clip,  mortgage_date,   mortgage_recording_date, amount, mortgage_composite_transaction_id
+FROM Mortgage_Num
+WHERE mortgage_date!='' AND amount!=0 AND clip!='' AND mortgage_type_code = 'P'
+ORDER BY clip, mortgage_date, amount
 
-
-
-
+-----
 DROP TABLE IF EXISTS zip_mortgage;
 CREATE TABLE zip_mortgage AS
 (
@@ -94,7 +94,7 @@ CREATE TABLE zip_mls_mortgage AS
         amount
 --check if you need to have Jan-March 2024
     FROM zip
-    INNER JOIN zip_mortgage
+    FULL JOIN zip_mortgage
     ON (
         zip.zip_code = zip_mortgage.zip
         AND zip.month::INTEGER = zip_mortgage.month
@@ -107,8 +107,7 @@ CREATE TABLE zip_mls_mortgage AS
         month
 );
 
-SELECT * FROM zip_mls_mortgage
-
+select * from zip_mls_mortgage ORDER BY amount
 
 /*
  mortgage_purpose_code
