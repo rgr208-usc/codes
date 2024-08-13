@@ -64,6 +64,7 @@ SELECT clip as clipm,
         construction_loan_indicator,equity_loan_indicator,fha_loan_indicator,veterans_administration_loan_indicator,
         multifamily_rider_indicator,condominium_rider_indicator,second_home_rider_indicator,
         variable_rate_loan_indicator, fixed_rate_indicator,
+            NULLIF(REGEXP_REPLACE(mortgage_amount, '[^0-9.]+', '', 'g'), '') ::numeric AS amount,
             NULLIF(REGEXP_REPLACE(SUBSTRING(mortgage_date FROM 1 FOR 4),'[^0-9.]+', '', 'g'), '')::integer AS year,
             NULLIF(REGEXP_REPLACE(SUBSTRING(mortgage_date FROM 5 FOR 2),'[^0-9.]+', '', 'g'), '')::integer  AS month,
             NULLIF(REGEXP_REPLACE(SUBSTRING(mortgage_date FROM 7 FOR 2),'[^0-9.]+', '', 'g'), '')::integer  AS day,
@@ -84,8 +85,8 @@ LEFT JOIN MTG
 ON MLS.clip_mls = MTG.clipm AND
    --we
 (
-ABS(EXTRACT(EPOCH FROM AGE(MLS.closedate, MTG.mtg_date)) / 86400) <= 10
-    OR
+--ABS(EXTRACT(EPOCH FROM AGE(MLS.closedate, MTG.mtg_date)) / 86400) <= 10
+    --OR
   ABS(EXTRACT(EPOCH FROM AGE(MLS.closedate, MTG.mtg_r_date)) / 86400) <= 10
    )
 ;
