@@ -63,14 +63,34 @@ CREATE TABLE zip_mls AS
         month,
         CAST(COUNT(fips_code)AS INTEGER) AS transactions,
         AVG(fips)     AS fips,
-        percentile_cont(0.5) WITHIN GROUP (ORDER BY price) AS price,
-        percentile_cont(0.5) WITHIN GROUP (ORDER BY list_p) AS list_p,
-        percentile_cont(0.5) WITHIN GROUP (ORDER BY or_list_p) AS or_list_p,
-        percentile_cont(0.5) WITHIN GROUP (ORDER BY price * list_ppsf / NULLIF(list_p, 0)) AS ppsf,
-        percentile_cont(0.5) WITHIN GROUP (ORDER BY list_p/ NULLIF(list_p, 0)) AS l_to_p,
-        percentile_cont(0.5) WITHIN GROUP (ORDER BY or_list_p/ NULLIF(list_p, 0)) AS orl_to_p,
-        percentile_cont(0.5) WITHIN GROUP (ORDER BY dom) AS dom,
-        percentile_cont(0.5) WITHIN GROUP (ORDER BY cumdom) AS cumdom
+        percentile_cont(0.5) WITHIN GROUP (ORDER BY price) AS price_50,
+        percentile_cont(0.5) WITHIN GROUP (ORDER BY list_p) AS list_p_50,
+        percentile_cont(0.5) WITHIN GROUP (ORDER BY or_list_p) AS or_list_p_50,
+        percentile_cont(0.5) WITHIN GROUP (ORDER BY price * list_ppsf / NULLIF(list_p, 0)) AS ppsf_50,
+        percentile_cont(0.5) WITHIN GROUP (ORDER BY list_p/ NULLIF(list_p, 0)) AS l_to_p_50,
+        percentile_cont(0.5) WITHIN GROUP (ORDER BY or_list_p/ NULLIF(list_p, 0)) AS orl_to_p_50,
+        percentile_cont(0.5) WITHIN GROUP (ORDER BY dom) AS dom_50,
+        percentile_cont(0.5) WITHIN GROUP (ORDER BY cumdom) AS cumdom_50,
+
+         percentile_cont(0.25) WITHIN GROUP (ORDER BY price) AS price_25,
+        percentile_cont(0.25) WITHIN GROUP (ORDER BY list_p) AS list_p_25,
+        percentile_cont(0.25) WITHIN GROUP (ORDER BY or_list_p) AS or_list_25,
+        percentile_cont(0.25) WITHIN GROUP (ORDER BY price * list_ppsf / NULLIF(list_p, 0)) AS ppsf_25,
+        percentile_cont(0.25) WITHIN GROUP (ORDER BY list_p/ NULLIF(list_p, 0)) AS l_to_p_25,
+        percentile_cont(0.25) WITHIN GROUP (ORDER BY or_list_p/ NULLIF(list_p, 0)) AS orl_to_p_25,
+        percentile_cont(0.25) WITHIN GROUP (ORDER BY dom) AS dom_25,
+        percentile_cont(0.25) WITHIN GROUP (ORDER BY cumdom) AS cumdom_25,
+
+
+        percentile_cont(0.75) WITHIN GROUP (ORDER BY price) AS price_75,
+        percentile_cont(0.75) WITHIN GROUP (ORDER BY list_p) AS list_p_75,
+        percentile_cont(0.75) WITHIN GROUP (ORDER BY or_list_p) AS or_list_75,
+        percentile_cont(0.75) WITHIN GROUP (ORDER BY price * list_ppsf / NULLIF(list_p, 0)) AS ppsf_75,
+        percentile_cont(0.75) WITHIN GROUP (ORDER BY list_p/ NULLIF(list_p, 0)) AS l_to_p_75,
+        percentile_cont(0.75) WITHIN GROUP (ORDER BY or_list_p/ NULLIF(list_p, 0)) AS orl_to_p_75,
+        percentile_cont(0.75) WITHIN GROUP (ORDER BY dom) AS dom_75,
+        percentile_cont(0.75) WITHIN GROUP (ORDER BY cumdom) AS cumdom_75
+
     FROM
         TRANS_NUM
     WHERE listing_address_zip_code!=''
@@ -87,7 +107,7 @@ CREATE TABLE zip_mls AS
 
 --create an active listing data range using listing dates and dom
 
-DROP TABLE IF EXISTS ACTIVE
+DROP TABLE IF EXISTS ACTIVE;
 CREATE TABLE ACTIVE AS
 (SELECT clip, fips_code, listing_address_zip_code, dom, listing_date,
    (listing_date + (dom || ' days')::INTERVAL)::DATE AS end_listing_date,
@@ -175,36 +195,24 @@ DROP TABLE IF EXISTS zip
 CREATE TABLE zip AS
 (
     SELECT
-      fips,
-      transactions,
-      zip_mls.listing_address_zip_code as zip_code,
-      zip_mls.month,
-      zip_mls.year,
-        price,
-        active_listing ,
-        list_p,
-        or_list_p,
-        l_to_p,
-        orl_to_p,
-        ppsf,
-        dom,
-        cumdom
+      m.*,
+      t.active_listing
 --check if you need to have Jan-March 2024
-    FROM zip_mls
-    LEFT JOIN zip_listing
+    FROM zip_mls m
+    LEFT JOIN zip_listing t
     ON (
-        zip_mls.listing_address_zip_code = zip_listing.listing_address_zip_code
-        AND zip_mls.month::INTEGER = zip_listing.month
-        AND zip_mls.year::INTEGER = zip_listing.year
+       m.listing_address_zip_code = t.listing_address_zip_code
+        AND m.month::INTEGER = t.month
+        AND t.year::INTEGER = t.year
     )
-    WHERE zip_mls.listing_address_zip_code !=''
+    WHERE m.listing_address_zip_code !=''
     ORDER BY
-        zip_mls.listing_address_zip_code,
-        year,
-        month
+        m.listing_address_zip_code,
+        m.year,
+        m.month
 );
 
-SELECT * FROM zip
+
 
 
 
