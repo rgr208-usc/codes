@@ -31,10 +31,6 @@ CREATE TABLE Mortgage_Num AS
     ---Residential Conventional
      );
 
-SELECT clip,  mortgage_date,   mortgage_recording_date, amount, mortgage_composite_transaction_id
-FROM Mortgage_Num
-WHERE mortgage_date!='' AND amount!=0 AND clip!='' AND mortgage_type_code = 'P'
-ORDER BY clip, mortgage_date, amount
 
 -----
 DROP TABLE IF EXISTS zip_mortgage;
@@ -43,17 +39,29 @@ CREATE TABLE zip_mortgage AS
     SELECT
         ----putt the mortage zip if zip_mls is empty - e.g refinance
         zip,
-        year,
-        month,
+        year AS yearm,
+        month AS monthm,
+      AVG(fips) AS fipsm,
       CAST(COUNT(fix)AS INTEGER) AS mortgages,
       CAST(COUNT(CASE WHEN  mortgage_type_code = 'P' THEN 1 END) AS INTEGER) AS purchases,
       CAST( COUNT(CASE WHEN  mortgage_type_code = 'J' THEN 1 END)AS INTEGER)  AS junior,
       CAST( COUNT(CASE WHEN  mortgage_type_code = 'R' THEN 1 END)AS INTEGER)  AS refinances,
       CAST( COUNT(CASE WHEN fix = 1 THEN 1 END)AS INTEGER) AS fix_mortgages,
       CAST( COUNT(CASE WHEN fix = 0 THEN 1 END)AS INTEGER) AS var_mortgages,
-       AVG(fips) AS fips,
-       percentile_cont(0.5) WITHIN GROUP (ORDER BY rate) AS rate,
-       percentile_cont(0.5) WITHIN GROUP (ORDER BY amount) AS amount
+
+       percentile_cont(0.5) WITHIN GROUP (ORDER BY rate*amount/100) AS int_50,
+       percentile_cont(0.5) WITHIN GROUP (ORDER BY rate) AS rate_50,
+       percentile_cont(0.5) WITHIN GROUP (ORDER BY amount) AS amount_50,
+
+
+       percentile_cont(0.25) WITHIN GROUP (ORDER BY rate*amount/100) AS int_25,
+       percentile_cont(0.25) WITHIN GROUP (ORDER BY rate) AS rate_25,
+       percentile_cont(0.25) WITHIN GROUP (ORDER BY amount) AS amount_25,
+
+
+       percentile_cont(0.75) WITHIN GROUP (ORDER BY rate*amount/100) AS int_75,
+       percentile_cont(0.75) WITHIN GROUP (ORDER BY rate) AS rate_75,
+       percentile_cont(0.75) WITHIN GROUP (ORDER BY amount) AS amount_75
     FROM
         Mortgage_Num
     WHERE zip!=''
@@ -74,44 +82,25 @@ DROP TABLE IF EXISTS zip_mls_mortgage;
 CREATE TABLE zip_mls_mortgage AS
 (
     SELECT
-      zip.fips,
-      transactions,
-      zip.zip_code,
-      zip.month,
-      zip.year,
-        price,
-       zip.active_listing,
-        list_p,
-        or_list_p,
-        l_to_p,
-        orl_to_p,
-        ppsf,
-        dom,
-        cumdom,
-        mortgages,
-         purchases,
-         refinances,
-         junior,
-         fix_mortgages,
-        var_mortgages,
-        rate,
-        amount
+        m.*,
+        t.*
+
 --check if you need to have Jan-March 2024
-    FROM zip
-    FULL JOIN zip_mortgage
+    FROM zip m
+    LEFT  JOIN zip_mortgage t
     ON (
-        zip.zip_code = zip_mortgage.zip
-        AND zip.month::INTEGER = zip_mortgage.month
-        AND zip.year::INTEGER = zip_mortgage.year
+        m.listing_address_zip_code = t.zip
+        AND m.month::INTEGER = t.monthm
+        AND m.year::INTEGER = t.yearm
     )
-    WHERE zip.zip_code !=''
+    WHERE m.listing_address_zip_code !=''
     ORDER BY
-        zip_code,
-        year,
-        month
+       m.listing_address_zip_code,
+       m.year,
+       m.month
 );
 
-select * from zip_mls_mortgage ORDER BY amount
+
 
 /*
  mortgage_purpose_code
