@@ -71,11 +71,13 @@ PROPTY	TS	Fractional Ownershp/Timeshare
 clear all
 cd /Users/ranciere/Dropbox/data_sources/Corelogic
 odbc query "PostgreSQLDB", dialog(complete) user(ranciere) password(usc2024!!)
-odbc load, exec ("SELECT * FROM public.zip_mls_mortgage " )  dsn("postgreSQLDB")
+odbc load, exec ("SELECT * FROM public.zip " )  dsn("postgreSQLDB")
 
-gen str5 ZIP_CODE = substr(zip_code, 1, 5)
-
+gen str5 ZIP_CODE = substr(zip_mls, 1, 5)
+gen ZIP1=substr(ZIP_CODE,1,1)
 destring ZIP_CODE, g(zip)
+
+drop if ZIP1!="9"
 
 destring active_listing, g(listing)
 drop active_listing
