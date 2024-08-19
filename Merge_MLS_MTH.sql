@@ -196,7 +196,6 @@ CREATE TABLE merge AS
 DROP TABLE IF EXISTS ZIP;
 CREATE TABLE ZIP AS
  SELECT
-      m.zip_mls AS zip_code,
        m.*,
       t.active_listing
 
