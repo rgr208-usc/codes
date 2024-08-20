@@ -191,8 +191,8 @@ END $$;
 
 --Merge with Listings and creating zip
 
-DROP TABLE IF EXISTS zip
-CREATE TABLE zip AS
+DROP TABLE IF EXISTS zip_mls_listing
+CREATE TABLE zip_mls_listing AS
 (
     SELECT
       m.*,
@@ -212,7 +212,31 @@ CREATE TABLE zip AS
         m.month
 );
 
+---Merge with Mortgage at the ZIP Livel
 
+--zip merge an alternative is to do a clip merge at individual level
+
+DROP TABLE IF EXISTS zip_mls_mortgage;
+CREATE TABLE zip_mls_mortgage AS
+(
+    SELECT
+        m.*,
+        t.*
+
+--check if you need to have Jan-March 2024
+    FROM zip_mls_listing m
+    LEFT  JOIN zip_mortgage t
+    ON (
+        m.listing_address_zip_code = t.zip
+        AND m.month::INTEGER = t.monthm
+        AND m.year::INTEGER = t.yearm
+    )
+    WHERE m.listing_address_zip_code !=''
+    ORDER BY
+       m.listing_address_zip_code,
+       m.year,
+       m.month
+);
 
 
 
