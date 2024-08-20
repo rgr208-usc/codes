@@ -132,8 +132,8 @@ CREATE TABLE merge AS
         year,
         month,
         CAST(COUNT(fips_code)AS INTEGER) AS transactions,
-       CAST( COUNT(CASE WHEN fix = 1 THEN 1 END)AS INTEGER) AS fix_mortgages,
-      CAST( COUNT(CASE WHEN fix = 0 THEN 1 END)AS INTEGER) AS var_mortgages,
+        CAST( COUNT(CASE WHEN fix = 1 THEN 1 END)AS INTEGER) AS fix_mortgages,
+        CAST( COUNT(CASE WHEN fix = 0 THEN 1 END)AS INTEGER) AS var_mortgages,
 
         AVG(fips)     AS fips,
         percentile_cont(0.5) WITHIN GROUP (ORDER BY price) AS price_50,
