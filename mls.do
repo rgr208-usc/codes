@@ -100,6 +100,14 @@ keep if year<2025 & year>=2010
 
 tsset zip month2
 
+g fix_share=fix_mortgages/(fix_mortgages+var_mortgages)
+
+
+
+order fips ZIP_CODE zip year month sales listing fix_share
+
+
+
 foreach var of varlist sales-intv_25{
 	*g d_`var'=`var'/l24.`var'-1
 	g lag_`var'=l24.`var'
