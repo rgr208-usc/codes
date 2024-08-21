@@ -1,4 +1,64 @@
 
+
+**transaction merge
+
+clear all
+cd /Users/ranciere/Dropbox/data_sources/Corelogic
+odbc query "PostgreSQLDB", dialog(complete) user(ranciere) password(usc2024!!)
+odbc load, exec ("SELECT * FROM public.zip " )  dsn("postgreSQLDB")
+
+gen str5 ZIP_CODE = substr(zip_mls, 1, 5)
+drop zip_mls
+gen ZIP1=substr(ZIP_CODE,1,1)
+destring ZIP_CODE, g(zip)
+
+drop if ZIP1!="9" | zip==90000
+
+order fips ZIP_CODE zip year month transactions active_listing
+
+rename active_listing listing
+rename  transactions sales
+ 
+merge m:1 ZIP_CODE using zipcodes
+keep if _merge==3
+
+g day=15
+
+g date=mdy(month,day,year)
+format date %td
+
+gen month2 = mofd(date)
+format month2 %tm
+
+keep if year<2025 & year>=2010
+
+tsset zip month2
+
+g fix_share=fix_mortgages/(fix_mortgages+var_mortgages)
+
+
+order fips ZIP_CODE zip year month sales listing fix_share
+
+
+
+foreach var of varlist sales-intv_25{
+	g d_`var'=`var'/l24.`var'-1
+	g lag_`var'=l24.`var'
+}
+
+
+
+g LA=1 if fips==06037 | fips==06059
+*g LA_CBSA=1 if LA_MSA==1 | fips==06065 | fips==06071 | fips==06111
+g SF=1 if fips==06075 | fips==06001 | fips== 06013 | fips==06081  | fips==06041
+g SD=1 if fips==06073
+g SC=1 if fips==06067 | fips==06061 | fips==06113 | fips==06017
+
+save ZIP, replace
+
+
+
+
 /*
 Los Angeles
 
@@ -65,63 +125,6 @@ PROPTY	TS	Fractional Ownershp/Timeshare
 
 
 */
-
-**BASE ON DG COLLAPSE
-
-clear all
-cd /Users/ranciere/Dropbox/data_sources/Corelogic
-odbc query "PostgreSQLDB", dialog(complete) user(ranciere) password(usc2024!!)
-odbc load, exec ("SELECT * FROM public.zip " )  dsn("postgreSQLDB")
-
-gen str5 ZIP_CODE = substr(zip_mls, 1, 5)
-drop zip_mls
-gen ZIP1=substr(ZIP_CODE,1,1)
-destring ZIP_CODE, g(zip)
-
-drop if ZIP1!="9" | zip==90000
-
-order fips ZIP_CODE zip year month transactions active_listing
-
-rename active_listing listing
-rename  transactions sales
- 
-merge m:1 ZIP_CODE using zipcodes
-keep if _merge==3
-
-g day=15
-
-g date=mdy(month,day,year)
-format date %td
-
-gen month2 = mofd(date)
-format month2 %tm
-
-keep if year<2025 & year>=2010
-
-tsset zip month2
-
-g fix_share=fix_mortgages/(fix_mortgages+var_mortgages)
-
-
-
-order fips ZIP_CODE zip year month sales listing fix_share
-
-
-
-foreach var of varlist sales-intv_25{
-	*g d_`var'=`var'/l24.`var'-1
-	g lag_`var'=l24.`var'
-}
-
-
-
-g LA=1 if fips==06037 | fips==06059
-*g LA_CBSA=1 if LA_MSA==1 | fips==06065 | fips==06071 | fips==06111
-g SF=1 if fips==06075 | fips==06001 | fips== 06013 | fips==06081  | fips==06041
-g SD=1 if fips==06073
-g SC=1 if fips==06067 | fips==06061 | fips==06113 | fips==06017
-
-save ZIP, replace
 
 /*model of grapjs
 
