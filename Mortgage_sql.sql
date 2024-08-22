@@ -100,3 +100,5 @@ MPRPS	V	Reverse Mortgage
 MPRPS	Z	Duplicate Mortgage
 
 */
+
+    select * fom zip_mls_mortgage
