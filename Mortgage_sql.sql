@@ -1,9 +1,9 @@
 
 -----try to complete missing zip using mls - not sure it is worth it it adds about 15' run time
 
-DROP TABLE IF EXISTS Mortgage_Num;
-CREATE TABLE Mortgage_Num AS
-    (SELECT mortgage.basics.clip,
+DROP TABLE IF EXISTS MTG;
+CREATE TABLE MTG AS
+    (SELECT clip, clip as clip_mtg,
          --mls.listings.clip as clip_mls,
             -- choice of mortgage date or mortgage recording rate
          mortgage_composite_transaction_id,
@@ -21,6 +21,11 @@ CREATE TABLE Mortgage_Num AS
             NULLIF(REGEXP_REPLACE(fixed_rate_indicator, '[^0-9.]+', '', 'g'), '') ::numeric AS fix,
             NULLIF(REGEXP_REPLACE(mortgage_amount, '[^0-9.]+', '', 'g'), '') ::numeric AS amount,
             TO_DATE( TO_CHAR(TO_DATE(mortgage_date, 'YYYYMMDD'), 'YYYY-MM-DD'),'YYYY-MM-DD')  AS mtgdate,
+
+        TO_DATE( TO_CHAR(TO_DATE(mortgage_recording_date, 'YYYYMMDD'), 'YYYY-MM-DD'),'YYYY-MM-DD')  AS mtg_r_date,
+       TO_DATE( TO_CHAR(TO_DATE(mortgage_date, 'YYYYMMDD'), 'YYYY-MM-DD'),'YYYY-MM-DD')  AS mtg_date,
+
+
             NULLIF(REGEXP_REPLACE(SUBSTRING(mortgage_date FROM 1 FOR 4),'[^0-9.]+', '', 'g'), '')::integer AS year,
             NULLIF(REGEXP_REPLACE(SUBSTRING(mortgage_date FROM 5 FOR 2),'[^0-9.]+', '', 'g'), '')::integer  AS month,
             NULLIF(REGEXP_REPLACE(SUBSTRING(mortgage_date FROM 7 FOR 2),'[^0-9.]+', '', 'g'), '')::integer  AS day,
@@ -63,7 +68,7 @@ CREATE TABLE zip_mortgage AS
        percentile_cont(0.75) WITHIN GROUP (ORDER BY rate) AS rate_75,
        percentile_cont(0.75) WITHIN GROUP (ORDER BY amount) AS amount_75
     FROM
-        Mortgage_Num
+        MTG
     WHERE zip!=''
     GROUP BY
         zip,
@@ -101,4 +106,3 @@ MPRPS	Z	Duplicate Mortgage
 
 */
 
-    select * fom zip_mls_mortgage
