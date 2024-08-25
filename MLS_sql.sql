@@ -2,14 +2,16 @@
 ---FULL TABLE ----
 
 -- LA (fips_code='06037' OR fips_code='06059' OR  fips_code='06065' OR  fips_code='06071'  OR fips_code='06111'));
-DROP TABLE IF EXISTS TRANS_NUM
-CREATE TABLE TRANS_NUM AS
+DROP TABLE IF EXISTS MLS;
+CREATE TABLE MLS AS
 (SELECT
+    clip as clip_mls, SUBSTRING(listing_address_zip_code FROM 1 FOR 5) as zip_mls,
     clip, fips_code, SUBSTRING(listing_address_zip_code FROM 1 FOR 5) as listing_address_zip_code ,
     listing_status_category_code_standardized,property_type_code_standardized,
     listing_id_standardized, listing_id,
     TO_DATE(SUBSTRING(close_date_standardized FROM 1 FOR 10), 'YYYY-MM-DD') AS close_date,
     TO_DATE(SUBSTRING(listing_date FROM 1 FOR 10), 'YYYY-MM-DD') AS listing_date,
+     TO_DATE(SUBSTRING(original_listing_date FROM 1 FOR 10), 'YYYY-MM-DD') AS orginal_listing_date,
     NULLIF(REGEXP_REPLACE(fips_code, '[^0-9.]+', '', 'g'), '')::numeric AS fips,
     NULLIF(REGEXP_REPLACE(listing_address_zip_code, '[^0-9.]+', '', 'g'), '')::numeric AS zip,
     NULLIF(REGEXP_REPLACE(SUBSTRING(listings.close_date_standardized FROM 1 FOR 4),'[^0-9.]+', '', 'g'), '')::integer as year,
@@ -24,28 +26,39 @@ CREATE TABLE TRANS_NUM AS
     NULLIF(REGEXP_REPLACE(days_on_market_dom_derived, '[^0-9.]+', '', 'g'), '')::numeric AS dom,
     NULLIF(REGEXP_REPLACE(days_on_market_dom_cumulative, '[^0-9.]+', '', 'g'), '')::numeric AS cumdom
 FROM   mls.listings
-WHERE listing_status_category_code_standardized='S' AND
-      --choose the type of property
-      (property_type_code_standardized='CN' OR property_type_code_standardized='SF' OR  property_type_code_standardized='TH'   )
+--Here we focus on transaction-separate file we focus on listing
+WHERE listing_status_category_code_standardized='S'
+AND listing_transaction_type_code_derived='S'
+  AND    (property_type_code_standardized='CN' OR property_type_code_standardized='SF' OR  property_type_code_standardized='TH'   )
 );
 
 
+/*
+Listing Category
+
+CdTbl	CdVal	CdDesc
+LSTCAT	A  	ACTIVE
+LSTCAT	D  	DELETED
+LSTCAT	S  	SOLD
+LSTCAT	U  	PENDING
+LSTCAT	X  	EXPIRED (INCLUDES WITHDRAWN, CANCELLED, TERMINATED, INACTIVE, ETC.)
+*/
 ---- Suppress the duplicates -- by clip listing date close date
 
 --------add an unique id
-ALTER TABLE TRANS_NUM ADD COLUMN id_column SERIAL PRIMARY KEY;
+ALTER TABLE MLS ADD COLUMN id SERIAL PRIMARY KEY;
 
 ----purging for duplicates (long)
 
 WITH cte AS (
     SELECT
         *,
-        ROW_NUMBER() OVER (PARTITION BY clip, listing_date, close_date, list_p, price ORDER BY id_column) as rn
-    FROM TRANS_NUM
+        ROW_NUMBER() OVER (PARTITION BY clip, listing_status_category_code_standardized,listing_date, close_date, list_p, price ORDER BY id) as rn
+    FROM MLS
 )
-DELETE FROM TRANS_NUM
-WHERE id_column IN (
-    SELECT id_column
+DELETE FROM MLS
+WHERE id IN (
+    SELECT id
     FROM cte
     WHERE rn > 1
 );
@@ -61,7 +74,8 @@ CREATE TABLE zip_mls AS
         listing_address_zip_code,
         year,
         month,
-        CAST(COUNT(fips_code)AS INTEGER) AS transactions,
+        CAST(COUNT(fips_code)AS INTEGER) AS transactions_old,
+        CAST(COUNT(CASE WHEN price IS NOT NULL AND price != 0 THEN 1 END) AS INTEGER) AS transactions,
         AVG(fips)     AS fips,
         percentile_cont(0.5) WITHIN GROUP (ORDER BY price) AS price_50,
         percentile_cont(0.5) WITHIN GROUP (ORDER BY list_p) AS list_p_50,
@@ -92,8 +106,8 @@ CREATE TABLE zip_mls AS
         percentile_cont(0.75) WITHIN GROUP (ORDER BY cumdom) AS cumdom_75
 
     FROM
-        TRANS_NUM
-    WHERE listing_address_zip_code!=''
+        MLS
+    WHERE listing_address_zip_code!='' AND listing_status_category_code_standardized='S' AND close_date BETWEEN '2000-01-01' AND '2024-12-31'
     GROUP BY
         listing_address_zip_code,
         year,
@@ -104,158 +118,9 @@ CREATE TABLE zip_mls AS
         month
 );
 
-
---create an active listing data range using listing dates and dom
-
-DROP TABLE IF EXISTS ACTIVE;
-CREATE TABLE ACTIVE AS
-(SELECT clip, fips_code, listing_address_zip_code, dom, listing_date,
-   (listing_date + (dom || ' days')::INTERVAL)::DATE AS end_listing_date,
-       daterange(
-        listing_date,
-        (listing_date + (dom || ' days')::INTERVAL)::DATE,
-        '[]'
-    ) AS active_date_range
-FROM TRANS_NUM
-    ---make sure open ended range correspond to active listing not missing dom
-WHERE dom IS NOT NULL OR listing_status_category_code_standardized='A');
-
----create a table per month check with manual code at the end
-
----check if you can go to 2024
-    DO $$
-DECLARE
-    start_year INTEGER := 2010;  -- Change this to your desired starting year
-    end_year INTEGER := 2024;    -- Change this to your desired ending year
-    month INTEGER;
-    year INTEGER;
-    last_day DATE;
-    start_date DATE;
-BEGIN
-    FOR year IN start_year..end_year LOOP
-        FOR month IN 1..12 LOOP
-            -- Calculate the start date and last day of the month for the current year and month
-            start_date := DATE (year || '-' || lpad(month::text, 2, '0') || '-01');
-            last_day := (start_date + INTERVAL '1 month') - INTERVAL '1 day';
-
-            EXECUTE format('
-                DROP TABLE IF EXISTS zip_mls_%s_%s;
-
-                CREATE TABLE zip_mls_%s_%s AS
-                SELECT
-                    listing_address_zip_code,
-                    %s AS year,
-                    %s AS month,
-                    CAST(COUNT(clip) AS INTEGER) AS active_listing
-                FROM
-                    (
-                        SELECT *,
-                            active_date_range && daterange(''%s'', ''%s'', ''[]'') AS overlap_check
-                        FROM active
-                    ) AS subquery
-                WHERE
-                    subquery.overlap_check
-                GROUP BY
-                    listing_address_zip_code
-                ORDER BY
-                    listing_address_zip_code;
-            ', year, month, year, month, year, month,
-            to_char(start_date, 'YYYY-MM-DD'),
-            to_char(last_day, 'YYYY-MM-DD'));
-        END LOOP;
-    END LOOP;
-END $$;
-
----Merge all tables to be checked seems OK
-DROP TABLE IF EXISTS zip_listing
-    DO $$
-DECLARE
-    year INT;
-    month INT;
-    table_name TEXT;
-    sql TEXT := 'CREATE TABLE zip_listing AS ';
-BEGIN
-    FOR year IN 2010..2024 LOOP
-        FOR month IN 1..12 LOOP
-            table_name := 'zip_mls_' || year || '_' || month;
-            sql := sql || 'SELECT * FROM ' || table_name || ' UNION ALL ';
-        END LOOP;
-    END LOOP;
-
-    -- Remove the last 'UNION ALL'
-    sql := left(sql, length(sql) - length(' UNION ALL '));
-
-    -- Execute the final SQL statement
-    EXECUTE sql;
-END $$;
-
 --Merge with Listings and creating zip
 
-DROP TABLE IF EXISTS zip_mls_listing
-CREATE TABLE zip_mls_listing AS
-(
-    SELECT
-      m.*,
-      t.active_listing
---check if you need to have Jan-March 2024
-    FROM zip_mls m
-    LEFT JOIN zip_listing t
-    ON (
-       m.listing_address_zip_code = t.listing_address_zip_code
-        AND m.month::INTEGER = t.month
-        AND t.year::INTEGER = t.year
-    )
-    WHERE m.listing_address_zip_code !=''
-    ORDER BY
-        m.listing_address_zip_code,
-        m.year,
-        m.month
-);
 
----Merge with Mortgage at the ZIP Livel
-
---zip merge an alternative is to do a clip merge at individual level
-
-DROP TABLE IF EXISTS zip_mls_mortgage;
-CREATE TABLE zip_mls_mortgage AS
-(
-    SELECT
-        m.*,
-        t.*
-
---check if you need to have Jan-March 2024
-    FROM zip_mls_listing m
-    LEFT  JOIN zip_mortgage t
-    ON (
-        m.listing_address_zip_code = t.zip
-        AND m.month::INTEGER = t.monthm
-        AND m.year::INTEGER = t.yearm
-    )
-    WHERE m.listing_address_zip_code !=''
-    ORDER BY
-       m.listing_address_zip_code,
-       m.year,
-       m.month
-);
-
-
-
----CLEANING--- DROP ALL INTERIM TABLE
-
-DO $$
-DECLARE
-    year INT;
-    month INT;
-    table_name TEXT;
-BEGIN
-    -- Iterate over each year and month to drop the tables
-    FOR year IN 2010..2024 LOOP
-        FOR month IN 1..12 LOOP
-            table_name := 'zip_mls_' || year || '_' || month;
-            EXECUTE 'DROP TABLE IF EXISTS ' || table_name;
-        END LOOP;
-    END LOOP;
-END $$;
 
 /*
 property_type_code_standardized
@@ -362,3 +227,5 @@ ORDER BY count DESC;
 SELECT COUNT(*) AS total_rows
 FROM   mls.listings
 */
+
+
