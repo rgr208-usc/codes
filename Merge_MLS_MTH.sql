@@ -1,77 +1,11 @@
 
---MERGING ON DATE RANGE
+--MERGING THE FIRST PART MERGE MLS AND MORTGAGE AT TRANSACTION LEVEL / THE SECOND PART MERGE AT ZIP LEVEL /:ISTINS IS ALWAYS PRODUCED AT ZIP LEVEL
+
+    --Transaction-->ZIP
+    --Zip--> ZIP_Z
 
 
-DROP TABLE IF EXISTS MLS;
-CREATE TABLE MLS AS
-SELECT
-    clip as clip_mls, SUBSTRING(listing_address_zip_code FROM 1 FOR 5) as zip_mls , fips_code,
-    listing_status_category_code_standardized,property_type_code_standardized, listing_id, listing_id_standardized,
-    TO_DATE(SUBSTRING(close_date_standardized FROM 1 FOR 10), 'YYYY-MM-DD') AS closedate,
-    TO_DATE(SUBSTRING(listing_date FROM 1 FOR 10), 'YYYY-MM-DD') AS listing_date,
-    TO_DATE(SUBSTRING(original_listing_date FROM 1 FOR 10), 'YYYY-MM-DD') AS orginal_listing_date,
-    NULLIF(REGEXP_REPLACE(fips_code, '[^0-9.]+', '', 'g'), '')::numeric AS fips,
-    NULLIF(REGEXP_REPLACE(SUBSTRING(listings.close_date_standardized FROM 1 FOR 4),'[^0-9.]+', '', 'g'), '')::integer as year,
-    NULLIF(REGEXP_REPLACE(SUBSTRING(listings.close_date_standardized FROM 6 FOR 2),'[^0-9.]+', '', 'g'), '')::integer as month,
-    NULLIF(REGEXP_REPLACE(SUBSTRING(listings.close_date_standardized FROM 9 FOR 2),'[^0-9.]+', '', 'g'), '')::integer as day,
-    NULLIF(REGEXP_REPLACE(SUBSTRING(listing_date FROM 1 FOR 4),'[^0-9.]+', '', 'g'), '') as list_year,
-    NULLIF(REGEXP_REPLACE(SUBSTRING(listing_date FROM 6 FOR 2),'[^0-9.]+', '', 'g'), '') as list_month,
-    NULLIF(REGEXP_REPLACE(close_price, '[^0-9.]+', '', 'g'), '')::numeric AS price,
-    NULLIF(REGEXP_REPLACE(current_listing_price, '[^0-9.]+', '', 'g'), '')::numeric AS list_p,
-    NULLIF(REGEXP_REPLACE(original_listing_price, '[^0-9.]+', '', 'g'), '')::numeric AS or_list_p,
-    NULLIF(REGEXP_REPLACE(price_per_square_foot, '[^0-9.]+', '', 'g'), '')::numeric AS list_ppsf,
-    NULLIF(REGEXP_REPLACE(days_on_market_dom_derived, '[^0-9.]+', '', 'g'), '')::numeric AS dom,
-    NULLIF(REGEXP_REPLACE(days_on_market_dom_cumulative, '[^0-9.]+', '', 'g'), '')::numeric AS cumdom
-    FROM mls.listings
-WHERE listing_status_category_code_standardized='S' AND
-      --choose the type of property
-      (property_type_code_standardized='CN' OR property_type_code_standardized='SF' OR  property_type_code_standardized='TH'   )
-;
-
----------
-
-ALTER TABLE MLS ADD COLUMN id_column SERIAL PRIMARY KEY;
-
-----purging for duplicates (long)
-
-WITH cte AS (
-    SELECT
-        *,
-        ROW_NUMBER() OVER (PARTITION BY clip_mls, listing_date, closedate, list_p, price ORDER BY id_column) as rn
-    FROM MLS
-)
-DELETE FROM MLS
-WHERE id_column IN (
-    SELECT id_column
-    FROM cte
-    WHERE rn > 1
-);
-
-
-DROP TABLE IF EXISTS MTG;
-CREATE TABLE MTG AS
-SELECT clip as clip_mtg,
-
-       ---choice of mortgage_date vs. mortgage_recprding_date
-
-       TO_DATE( TO_CHAR(TO_DATE(mortgage_recording_date, 'YYYYMMDD'), 'YYYY-MM-DD'),'YYYY-MM-DD')  AS mtg_r_date,
-       TO_DATE( TO_CHAR(TO_DATE(mortgage_date, 'YYYYMMDD'), 'YYYY-MM-DD'),'YYYY-MM-DD')  AS mtg_date,
-       mortgage_type_code, --PURCHASE, REFI, JUNIOR, P,R,J
-       mortgage_purpose_code,  --F (First Mortgage), see below
-       conforming_loan_indicator,conventional_loan_indicator, refinance_loan_indicator,
-       government_sponsored_enterprise_gse_eligible_mortgage_indicator,
-        construction_loan_indicator,equity_loan_indicator,fha_loan_indicator,veterans_administration_loan_indicator,
-        multifamily_rider_indicator,condominium_rider_indicator,second_home_rider_indicator,
-        variable_rate_loan_indicator, fixed_rate_indicator,
-            NULLIF(REGEXP_REPLACE(fixed_rate_indicator, '[^0-9.]+', '', 'g'), '') ::numeric AS fix,
-            NULLIF(REGEXP_REPLACE(mortgage_amount, '[^0-9.]+', '', 'g'), '') ::numeric AS amount,
-            NULLIF(REGEXP_REPLACE(SUBSTRING(mortgage_date FROM 1 FOR 4),'[^0-9.]+', '', 'g'), '')::integer AS year,
-            NULLIF(REGEXP_REPLACE(SUBSTRING(mortgage_date FROM 5 FOR 2),'[^0-9.]+', '', 'g'), '')::integer  AS month,
-            NULLIF(REGEXP_REPLACE(SUBSTRING(mortgage_date FROM 7 FOR 2),'[^0-9.]+', '', 'g'), '')::integer  AS day,
-            NULLIF(REGEXP_REPLACE(mortgage_interest_rate, '[^0-9.]+', '', 'g'), '') ::numeric AS rate
-    FROM mortgage.basics
-   WHERE property_indicator_code___static IN ('10', '11', '21', '22') AND  mortgage_type_code = 'P'
-;
+--1.TRANSACTION LEVEL MERGE
 
 
 ---MERGE-- checked with Mortgage_Recorded_Date
@@ -79,14 +13,15 @@ SELECT clip as clip_mtg,
 DROP TABLE IF EXISTS MLS_MTG;
 CREATE TABLE MLS_MTG AS
 SELECT
-    m.clip_mls,
+    m.clip,
     m.fips,
     m.fips_code,
-    m.zip_mls,
-    m.listing_id,
-    m.orginal_listing_date,
+    m.zip_code,
+    m.zip_num,
+    m.listing_id, m.orginal_listing_date,
     m.listing_date,
-    m.closedate,
+    m.listing_status_category_code_standardized,
+    m.close_date,
     m.year,
     m.month,
     m.list_p,
@@ -98,7 +33,7 @@ SELECT
     m.list_p/NULLIF(m.price,0) AS lp_price,
 
 
-    t.clip_mtg,
+    t.clip as clipm,
     t.mtg_date,
     t.mtg_r_date,
     t.amount AS mortgage,
@@ -114,13 +49,16 @@ FROM
 LEFT JOIN
     MTG t
 ON
-    m.clip_mls = t.clip_mtg
+    m.clip = t.clip
     AND (
-        ABS(EXTRACT(EPOCH FROM AGE(m.closedate, t.mtg_date)) / 86400) <= 5
+        ABS(EXTRACT(EPOCH FROM AGE(m.close_date, t.mtg_date)) / 86400) <= 5
         OR
-        ABS(EXTRACT(EPOCH FROM AGE(m.closedate, t.mtg_r_date)) / 86400) <= 5
+        ABS(EXTRACT(EPOCH FROM AGE(m.close_date, t.mtg_r_date)) / 86400) <= 5
     )
-WHERE  m.clip_mls!='';
+WHERE  m.clip!=''
+  AND  m.listing_status_category_code_standardized='S'
+  AND m.zip_num>90000 AND m.zip_num<100000 AND m.zip_num IS NOT NULL
+AND  t.mortgage_type_code = 'P';
 
 
 ----COLLAPSE AND MERGE WITH LISTING
@@ -128,10 +66,12 @@ WHERE  m.clip_mls!='';
 DROP TABLE IF EXISTS merge;
 CREATE TABLE merge AS
     SELECT
-        zip_mls,
+        zip_code,
         year,
         month,
-        CAST(COUNT(fips_code)AS INTEGER) AS transactions,
+       CAST(COUNT(fips_code)AS INTEGER) AS transactions_old,
+        CAST(COUNT(CASE WHEN price IS NOT NULL AND price != 0 THEN 1 END) AS INTEGER) AS transactions,
+        CAST(COUNT(CASE WHEN  listing_status_category_code_standardized = 'S' THEN 1 END) AS INTEGER) AS transaction_exp,
         CAST( COUNT(CASE WHEN fix = 1 THEN 1 END)AS INTEGER) AS fix_mortgages,
         CAST( COUNT(CASE WHEN fix = 0 THEN 1 END)AS INTEGER) AS var_mortgages,
 
@@ -184,39 +124,100 @@ CREATE TABLE merge AS
       CAST( COUNT(CASE WHEN fix = 0 THEN 1 END)AS INTEGER) AS var_mortgages,
 */
     FROM MLS_MTG
+    WHERE
     GROUP BY
-        zip_mls,
+        zip_code,
         year,
         month
     ORDER BY
-        zip_mls,
+        zip_code,
         year,
         month
 ;
-
---MERGE WITH LISTING
 
 DROP TABLE IF EXISTS ZIP;
 CREATE TABLE ZIP AS
- SELECT
-       m.*,
-      t.active_listing
+(
+    SELECT
+      m.*,
+      t.active_listing,
+      u.listing_exp
 
 --check if you need to have Jan-March 2024
-    FROM merge m
+    FROM MERGE m
     LEFT JOIN zip_listing t
     ON (
-        m.zip_mls = t.listing_address_zip_code
+       m.zip_code = t.zip_code
         AND m.month::INTEGER = t.month
         AND m.year::INTEGER = t.year
     )
+    LEFT JOIN listing_expired u
+        ON(m.zip_code = u.zip_code
+        AND m.month::INTEGER = u.month
+        AND m.year::INTEGER = u.year)
+
+
     ORDER BY
-        m.zip_mls,
+        m.zip_code,
         m.year,
         m.month
-;
+);
+
+--2 ZIP MERGE
+
+
+DROP TABLE IF EXISTS ZIP_ZIP;
+CREATE TABLE ZIP_ZIP AS
+(
+    SELECT
+      m.*,
+      t.active_listing,
+      u.listing_exp,
+      w.mortgages,
+      w.purchases,
+      w.junior,
+   w.refinances,
+   w.fix_mortgages,
+   w.var_mortgages,
+
+       w.int_50,
+    w.rate_50,
+      w.amount_50,
+
+
+  w.int_25,
+   w.rate_25,
+         w.amount_25,
+         w.int_75,
+         w.rate_75,
+  w.amount_75
+
+--check if you need to have Jan-March 2024
+    FROM zip_mls m
+    LEFT JOIN zip_listing t
+    ON (
+       m.zip_code = t.zip_code
+        AND m.month = t.month
+        AND m.year= t.year
+    )
+
+    LEFT JOIN zip_expired_listing u
+        ON(m.zip_code = u.zip_code
+        AND m.month::INTEGER = u.month
+        AND m.year::INTEGER = u.year)
+    LEFT  JOIN zip_mortgage w
+    ON (
+        m.zip_code = w.zip_code
+        AND m.month::INTEGER = w.month
+        AND m.year::INTEGER = w.year
+    )
+
+    ORDER BY
+        m.zip_code,
+        m.year,
+        m.month
+);
 
 
 
-
-select * from merge
+select zip_code, year, month, transaction, active_listing, listing_exp FROM ZIP_ZIP WHERE year>2009
