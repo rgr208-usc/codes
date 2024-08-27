@@ -2,10 +2,16 @@
 
 **transaction merge
 
+*zip is the left joint at individual transaction level
+**
+
 clear all
 cd /Users/ranciere/Dropbox/data_sources/Corelogic
 odbc query "PostgreSQLDB", dialog(complete) user(ranciere) password(usc2024!!)
 odbc load, exec ("SELECT * FROM public.zip " )  dsn("postgreSQLDB")
+
+
+order zip_mls year month transactions* fix_mortgages var_mortgages active_listing exp_sales_listing exp_no_sales_listing
 
 gen str5 ZIP_CODE = substr(zip_mls, 1, 5)
 drop zip_mls
@@ -55,6 +61,7 @@ g SD=1 if fips==06073
 g SC=1 if fips==06067 | fips==06061 | fips==06113 | fips==06017
 
 save ZIP, replace
+
 
 
 
