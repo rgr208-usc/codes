@@ -3,7 +3,7 @@
 
 DROP TABLE IF EXISTS MTG;
 CREATE TABLE MTG AS
-    (SELECT clip, clip as clip_mtg,
+    (SELECT clip,
          --mls.listings.clip as clip_mls,
             -- choice of mortgage date or mortgage recording rate
          mortgage_composite_transaction_id,
@@ -15,8 +15,9 @@ CREATE TABLE MTG AS
            government_sponsored_enterprise_gse_eligible_mortgage_indicator,
            construction_loan_indicator,equity_loan_indicator,fha_loan_indicator,veterans_administration_loan_indicator,
           multifamily_rider_indicator,condominium_rider_indicator,second_home_rider_indicator,
-        variable_rate_loan_indicator, fixed_rate_indicator, mortgage_date, mortgage_recording_date,
-            SUBSTRING( deed_situs_zip_code___static FROM 1 FOR 5) as zip,
+          variable_rate_loan_indicator, fixed_rate_indicator, mortgage_date, mortgage_recording_date,
+            SUBSTRING( deed_situs_zip_code___static FROM 1 FOR 5) as zip_code,
+            NULLIF(REGEXP_REPLACE(SUBSTRING( deed_situs_zip_code___static FROM 1 FOR 5) , '[^0-9.]+', '', 'g'), '')::numeric AS zip_num,
             NULLIF(REGEXP_REPLACE(mortgage.basics.fips_code, '[^0-9.]+', '', 'g'), '') ::numeric AS fips,
             NULLIF(REGEXP_REPLACE(fixed_rate_indicator, '[^0-9.]+', '', 'g'), '') ::numeric AS fix,
             NULLIF(REGEXP_REPLACE(mortgage_amount, '[^0-9.]+', '', 'g'), '') ::numeric AS amount,
@@ -43,9 +44,9 @@ CREATE TABLE zip_mortgage AS
 (
     SELECT
         ----putt the mortage zip if zip_mls is empty - e.g refinance
-        zip,
-        year AS yearm,
-        month AS monthm,
+        zip_code,
+        year,
+        month,
       AVG(fips) AS fipsm,
       CAST(COUNT(fix)AS INTEGER) AS mortgages,
       CAST(COUNT(CASE WHEN  mortgage_type_code = 'P' THEN 1 END) AS INTEGER) AS purchases,
@@ -69,13 +70,13 @@ CREATE TABLE zip_mortgage AS
        percentile_cont(0.75) WITHIN GROUP (ORDER BY amount) AS amount_75
     FROM
         MTG
-    WHERE zip!=''
+    WHERE zip_num>90000 AND zip_num<100000 AND zip_num IS NOT NULL
     GROUP BY
-        zip,
+        zip_code,
         year,
         month
     ORDER BY
-        zip,
+        zip_code,
         year,
         month
 );
