@@ -1,7 +1,9 @@
-MLS_SQL produces a zip-month level MLS dataset \\
-The key feature is that it re-creates active listings for any zip-month then merges with MLS at the **zip-month** \\ Final ouptut table zip in public \\
-MTG_SQL produces a zip level Mortgage dataset and then matches at the zip-month level with MLS (including listing) \\  inal ouptut table zip_mls_mortgage in public \\
-Note:MLS_SQL should be run before MTG_SQL \\
-MERGE_MLS_MTH merge between MLS and MTG at the **transaction level**. Key to obtain LTV, then collapse at zip_month and merge with active listing \\****Final ouptut table merge in public \\
-All join are LEFT JOIN with MLS on the left \\
-MLS codes include a purging for duplicates \ this is important
+1. MLS_sql prepares data on transactions,listings (including active listing) and prices at transaction and zip level
+2.  Mortgage_sql pepares date on mortgages  at transaction and zip level
+3.  Merge_MLS_MTH merge at --a) transaction level (within a data range) final output ZIP---b) zip level ZIP_ZIP
+4.  Important Features: Cleaning for Duplicates. This is key
+5.  New Features; In addition to transactions, and active listing, I added Expired listing (listing ending up with no sales)
+6.  Key Variable: DOM. days on markets. I produced active listing using the range listing_date+dom so if dom is not good, we are screwed.
+7.  Notes: Listing Prices are computing with only Listing that end up with sales. (this is not necessary but is important to produce List_Price/Price)
+8.  At the zip level, I produce p25,p50,p75 of variables (except the ones that is a count -- transactions, sales..)
+9.  MLS.do is the stata code
