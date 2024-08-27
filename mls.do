@@ -3,7 +3,7 @@
 **transaction merge
 
 *zip is the left joint at individual transaction level
-**
+** zip_zip at the zip level
 
 clear all
 cd /Users/ranciere/Dropbox/data_sources/Corelogic
