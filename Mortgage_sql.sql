@@ -1,5 +1,5 @@
 
------try to complete missing zip using mls - not sure it is worth it it adds about 15' run time
+-----mortgages
 
 DROP TABLE IF EXISTS MTG;
 CREATE TABLE MTG AS
