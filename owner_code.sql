@@ -1,34 +1,46 @@
-DROP TABLE output_table;
+DROP TABLE IF EXISTS output_table;
 CREATE TABLE output_table AS
-    (SELECT clip, transaction_batch_date, buyer_1_full_name, buyer_2_full_name, seller_1_full_name,
-            seller_2_full_name FROM ownertransfer_comprehensive
-    WHERE interfamily_related_indicator='0' AND  (fips_code='06037' OR fips_code='06059' OR  fips_code='06065' OR  fips_code='06071'
-       OR fips_code='06111')
-                                                                                                       ) ;
-drop TABLE table1;
+SELECT clip, transaction_batch_date, buyer_1_last_name, buyer_2_last_name, seller_1_last_name
+             FROM ownertransfer_comprehensive
+    WHERE interfamily_related_indicator='0' AND  (fips_code='06037' OR fips_code='06059');
+
+DROP TABLE IF EXISTS table1;
 CREATE TABLE table1 (
     id SERIAL PRIMARY KEY,
     name1 TEXT
 );
-drop TABLE table2;
+DROP TABLE IF EXISTS table2;
 CREATE TABLE table2 (
     id SERIAL PRIMARY KEY,
     name2 TEXT
 );
 
 INSERT INTO table1 (name1)
-select buyer_1_full_name from output_table;
+select buyer_1_last_name from output_table;
 
 INSERT INTO table2 (name2)
-select seller_1_full_name from output_table;
+select seller_1_last_name from output_table;
 
 
-CREATE INDEX idx_name1_trgm ON table1 USING gin (name1 gin_trgm_ops);
-CREATE INDEX idx_name2_trgm ON table2 USING gin (name2 gin_trgm_ops);
 
---
+--Exact match
+DROP TABLE IF EXISTS match;
+CREATE INDEX idx_table1_name1_hash ON table1((md5(name1))); CREATE INDEX idx_table2_name2_hash ON table2((md5(name2)));
+CREATE TABLE match AS
+SELECT
+    t1.id AS id1,
+    t1.name1,
+    t2.id AS id2,
+    t2.name2
+  FROM
+    table1 t1
 
+  LEFT JOIN
+   table2 t2 ON md5(t1.name1) = md5(t2.name2);
+;
 
+select * from match
+/*
 CREATE TABLE match AS
 (SELECT
     t1.id AS id1,
@@ -101,3 +113,6 @@ ON
     levenshtein(t1.name, t2.name) <= 2 -- Adjust the threshold as needed
 ORDER BY
     distance;
+
+
+ */
