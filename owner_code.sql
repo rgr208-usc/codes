@@ -2,8 +2,10 @@ DROP TABLE IF EXISTS buyer_table;
 CREATE TABLE buyer_table AS
 SELECT
     sale_derived_date, buyer_1_last_name, buyer_2_last_name,
-       TO_DATE(SUBSTRING(sale_derived_date FROM 1 FOR 8), 'YYYYMMDD') AS sale_date
-             FROM ownertransfer_comprehensive
+    SUBSTRING(buyer_1_first_name_and_middle_initial FROM 1 FOR 4) as buyer_1_first_name,
+    SUBSTRING(buyer_2_first_name_and_middle_initial FROM 1 FOR 4) as buyer_2_first_name,
+    TO_DATE(SUBSTRING(sale_derived_date FROM 1 FOR 8), 'YYYYMMDD') AS sale_date
+    FROM ownertransfer_comprehensive
     WHERE interfamily_related_indicator='0'
       AND property_indicator_code___static='10'
       AND  (fips_code='06037' OR fips_code='06059')
@@ -12,6 +14,7 @@ AND deed_category_type_code='G';
 DROP TABLE IF EXISTS seller_table;
 CREATE TABLE seller_table AS
 SELECT sale_derived_date, seller_1_last_name,
+        SUBSTR(seller_1_first_name FROM 1 FOR 4) as seller_1_first_name,
        TO_DATE(SUBSTRING(sale_derived_date FROM 1 FOR 8), 'YYYYMMDD') AS sale_date
              FROM ownertransfer_comprehensive
     WHERE interfamily_related_indicator='0'
@@ -19,8 +22,15 @@ SELECT sale_derived_date, seller_1_last_name,
   AND  (fips_code='06037' OR fips_code='06059')
 AND deed_category_type_code='G';
 
-CREATE INDEX idx_buyer_last_name ON buyer_table(buyer_1_last_name);
-CREATE INDEX idx_seller_last_name ON seller_table(seller_1_last_name);
+CREATE INDEX idx_buyer1_last_name ON buyer_table(buyer_1_last_name);
+CREATE INDEX idx_buyer2_last_name ON buyer_table(buyer_2_last_name);
+
+CREATE INDEX idx_buyer1_first_name ON buyer_table(buyer_1_first_name);
+CREATE INDEX idx_buyer2_first_name ON buyer_table(buyer_2_first_name);
+
+CREATE INDEX idx_seller1_last_name ON seller_table(seller_1_last_name);
+CREATE INDEX idx_seller1_first_name ON seller_table(seller_1_first_name);
+
 CREATE INDEX idx_buyer_sale_date ON buyer_table (sale_date);
 CREATE INDEX idx_seller_sale_date ON seller_table (sale_date);
 
@@ -29,8 +39,12 @@ DROP TABLE IF EXISTS INTERNAL_TRANSACTION;
 CREATE TABLE INTERNAL_TRANSACTION AS
 SELECT
     m.buyer_1_last_name,
+    m.buyer_1_first_name,
+    m.buyer_2_first_name,
+    m.buyer_2_last_name,
     m.sale_date as buyer_close,
     t.seller_1_last_name,
+    t.seller_1_first_name,
     t.sale_date as seller_close
 FROM
     buyer_table m
@@ -39,7 +53,9 @@ INNER JOIN
 ON
     ( m.buyer_1_last_name=t.seller_1_last_name OR m.buyer_2_last_name=t.seller_1_last_name)
     AND
-        ABS(EXTRACT(EPOCH FROM AGE( m.sale_date, t.sale_date))/ 86400) <= 365
+   (m.buyer_1_first_name=t.seller_1_first_name OR m.buyer_2_first_name=t.seller_1_first_name)
+    AND
+    ABS(EXTRACT(EPOCH FROM AGE( m.sale_date, t.sale_date))/ 86400) <= 365
 ;
 
 
