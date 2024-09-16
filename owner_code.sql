@@ -14,7 +14,7 @@ AND deed_category_type_code='G';
 DROP TABLE IF EXISTS seller_table;
 CREATE TABLE seller_table AS
 SELECT sale_derived_date, seller_1_last_name,
-        SUBSTR(seller_1_first_name FROM 1 FOR 4) as seller_1_first_name,
+        SUBSTRING(seller_1_first_name FROM 1 FOR 4) as seller_1_first_name,
        TO_DATE(SUBSTRING(sale_derived_date FROM 1 FOR 8), 'YYYYMMDD') AS sale_date
              FROM ownertransfer_comprehensive
     WHERE interfamily_related_indicator='0'
