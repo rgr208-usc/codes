@@ -22,17 +22,8 @@ SELECT sale_derived_date, seller_1_last_name,
   AND  (fips_code='06037' OR fips_code='06059')
 AND deed_category_type_code='G';
 
-CREATE INDEX idx_buyer1_last_name ON buyer_table(buyer_1_last_name);
-CREATE INDEX idx_buyer2_last_name ON buyer_table(buyer_2_last_name);
-
-CREATE INDEX idx_buyer1_first_name ON buyer_table(buyer_1_first_name);
-CREATE INDEX idx_buyer2_first_name ON buyer_table(buyer_2_first_name);
-
-CREATE INDEX idx_seller1_last_name ON seller_table(seller_1_last_name);
-CREATE INDEX idx_seller1_first_name ON seller_table(seller_1_first_name);
-
-CREATE INDEX idx_buyer_sale_date ON buyer_table (sale_date);
-CREATE INDEX idx_seller_sale_date ON seller_table (sale_date);
+CREATE INDEX idx_buyer1 ON buyer_table(buyer_1_last_name, buyer_1_first_name, sale_date);
+CREATE INDEX idx_seller1 ON seller_table(seller_1_last_name, seller_1_last_name,sale_date);
 
 
 DROP TABLE IF EXISTS INTERNAL_TRANSACTION;
@@ -51,9 +42,13 @@ FROM
 INNER JOIN
     seller_table t
 ON
+     m.buyer_1_last_name=t.seller_1_last_name AND m.buyer_1_first_name=t.seller_1_first_name
+    /*
     ( m.buyer_1_last_name=t.seller_1_last_name OR m.buyer_2_last_name=t.seller_1_last_name)
     AND
    (m.buyer_1_first_name=t.seller_1_first_name OR m.buyer_2_first_name=t.seller_1_first_name)
+    */
+     */
     AND
     ABS(EXTRACT(EPOCH FROM AGE( m.sale_date, t.sale_date))/ 86400) <= 365
 ;
