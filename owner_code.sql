@@ -42,14 +42,7 @@ FROM
 INNER JOIN
     seller_table t
 ON
-     m.buyer_1_last_name=t.seller_1_last_name AND m.buyer_1_first_name=t.seller_1_first_name
-    /*
-    ( m.buyer_1_last_name=t.seller_1_last_name OR m.buyer_2_last_name=t.seller_1_last_name)
-    AND
-   (m.buyer_1_first_name=t.seller_1_first_name OR m.buyer_2_first_name=t.seller_1_first_name)
-    */
-     */
-    AND
+     m.buyer_1_last_name=t.seller_1_last_name AND m.buyer_1_first_name=t.seller_1_first_name AND
     ABS(EXTRACT(EPOCH FROM AGE( m.sale_date, t.sale_date))/ 86400) <= 365
 ;
 
