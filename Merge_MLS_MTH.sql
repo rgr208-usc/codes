@@ -150,7 +150,7 @@ CREATE TABLE ZIP AS
         AND m.month::INTEGER = t.month
         AND m.year::INTEGER = t.year
     )
-    LEFT JOIN listing_expired u
+    LEFT JOIN zip_expired_listing u
         ON(m.zip_code = u.zip_code
         AND m.month::INTEGER = u.month
         AND m.year::INTEGER = u.year)
