@@ -23,7 +23,7 @@ SELECT sale_derived_date, seller_1_last_name,
 AND deed_category_type_code='G';
 
 CREATE INDEX idx_buyer1 ON buyer_table(buyer_1_last_name, buyer_1_first_name, sale_date);
-CREATE INDEX idx_seller1 ON seller_table(seller_1_last_name, seller_1_last_name,sale_date);
+CREATE INDEX idx_seller1 ON seller_table(seller_1_last_name, seller_1_first_name,sale_date);
 
 
 DROP TABLE IF EXISTS INTERNAL_TRANSACTION;
@@ -39,7 +39,7 @@ SELECT
     t.sale_date as seller_close
 FROM
     buyer_table m
-INNER JOIN
+LEFT JOIN
     seller_table t
 ON
      m.buyer_1_last_name=t.seller_1_last_name AND m.buyer_1_first_name=t.seller_1_first_name AND
