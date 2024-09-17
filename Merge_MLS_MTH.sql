@@ -124,7 +124,6 @@ CREATE TABLE merge AS
       CAST( COUNT(CASE WHEN fix = 0 THEN 1 END)AS INTEGER) AS var_mortgages,
 */
     FROM MLS_MTG
-    WHERE
     GROUP BY
         zip_code,
         year,
