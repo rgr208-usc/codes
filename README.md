@@ -9,3 +9,4 @@
 9.  MLS.do is the stata code
 10. Owner_Code produces the pair of buyer-seller within 12 months following the same procedure as in Bayer-Annenber IER
 11. Ownwer_Name_extract is a sandbox code to check data on a small sample (my zip code)
+12. Issues with Matching Names: 1) indexing 2) duplicates (minor) 3) missing data on ownership
