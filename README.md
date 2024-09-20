@@ -7,4 +7,6 @@
 7.  Notes: Listing Prices are computing with only Listing that end up with sales. (this is not necessary but is important to produce List_Price/Price)
 8.  At the zip level, I produce p25,p50,p75 of variables (except the ones that is a count -- transactions, sales..)
 9.  MLS.do is the stata code
-10. Owner_Code produces the pair of buyer-seller within 12 months following the same procedure as in Bayer-Annenber IER 
+10. Owner_Code produces the pair of buyer-seller within 12 months following the same procedure as in Bayer-Annenber IER
+11. Ownwer_Name_extract is a sandbox code to check data on a small sample (my zip code)
+12. Issues with Matching Names: 1) indexing 2) duplicates (minor) 3) missing data on ownership
