@@ -1,54 +1,78 @@
-DROP TABLE IF EXISTS buyer_table;
-CREATE TABLE buyer_table AS
+DROP TABLE IF EXISTS table_full;
+CREATE TABLE table_full AS
 SELECT
-    sale_derived_date, buyer_1_last_name, buyer_2_last_name,
+    NULLIF(REGEXP_REPLACE( owner_transfer_composite_transaction_id,'[^0-9.]+', '', 'g'), '')::bigint as transaction_id,
     SUBSTRING(buyer_1_first_name_and_middle_initial FROM 1 FOR 4) as buyer_1_first_name,
+    buyer_1_last_name,
     SUBSTRING(buyer_2_first_name_and_middle_initial FROM 1 FOR 4) as buyer_2_first_name,
-    TO_DATE(SUBSTRING(sale_derived_date FROM 1 FOR 8), 'YYYYMMDD') AS sale_date
+     buyer_2_last_name,
+    SUBSTRING(seller_1_first_name FROM 1 FOR 4) as seller_1_first_name,
+    seller_1_last_name,
+    TO_DATE(SUBSTRING(sale_derived_date FROM 1 FOR 8), 'YYYYMMDD') AS date
     FROM ownertransfer_comprehensive
-    WHERE interfamily_related_indicator='0'
-      AND property_indicator_code___static='10'
-      AND  (fips_code='06037' OR fips_code='06059')
-AND deed_category_type_code='G';
+    WHERE interfamily_related_indicator='0' --no family transfer
+      AND primary_category_code='A'  --arm length
+      AND property_indicator_code___static='10' -- single family
+      AND  (fips_code='06037' OR fips_code='06059') --LA MSA
+AND seller_1_last_name!='' AND seller_1_first_name!='' AND buyer_1_first_name_and_middle_initial!=''
+                  AND buyer_1_last_name!='' --non missing name
+                  AND TO_DATE(SUBSTRING(sale_derived_date FROM 1 FOR 8), 'YYYYMMDD')>'2015-01-01' --time sample
+AND TO_DATE(SUBSTRING(sale_derived_date FROM 1 FOR 8), 'YYYYMMDD')<'2024-01-01'
+ ;
 
-DROP TABLE IF EXISTS seller_table;
-CREATE TABLE seller_table AS
-SELECT sale_derived_date, seller_1_last_name,
-        SUBSTRING(seller_1_first_name FROM 1 FOR 4) as seller_1_first_name,
-       TO_DATE(SUBSTRING(sale_derived_date FROM 1 FOR 8), 'YYYYMMDD') AS sale_date
-             FROM ownertransfer_comprehensive
-    WHERE interfamily_related_indicator='0'
-   AND property_indicator_code___static='10'
-  AND  (fips_code='06037' OR fips_code='06059')
-AND deed_category_type_code='G';
-
+/*
 CREATE INDEX idx_buyer1 ON buyer_table(buyer_1_last_name, buyer_1_first_name, sale_date);
 CREATE INDEX idx_seller1 ON seller_table(seller_1_last_name, seller_1_first_name,sale_date);
+*/
 
+DROP TABLE IF EXISTS table1;
+CREATE TABLE table1 (
+    id SERIAL PRIMARY KEY,
+   name1 TEXT, name2 TEXT,  date1 DATE
+                    --, id2 BIGINT
+);
+
+
+DROP TABLE IF EXISTS table2;
+CREATE TABLE table2 (
+    id SERIAL PRIMARY KEY,
+   name3 TEXT, name4 TEXT, date2 DATE
+
+                    ---, id3 BIGINT
+);
+
+INSERT INTO table1 (name1)
+select buyer_1_first_name from table_full;
+INSERT INTO table1 (name2)
+select buyer_1_last_name from table_full;
+INSERT INTO table1 (date1)
+select date from table_full;
+--INSERT INTO table1 (id2)
+--select transaction_id from table_full;
+
+
+INSERT INTO table2 (name3)
+select seller_1_first_name from table_full;
+INSERT INTO table2 (name4)
+select seller_1_last_name from table_full;
+INSERT INTO table2 (date2)
+select date from table_full;
+--INSERT INTO table2 (id3)
+--select transaction_id from table_full;
 
 DROP TABLE IF EXISTS INTERNAL_TRANSACTION;
 CREATE TABLE INTERNAL_TRANSACTION AS
 SELECT
-    m.buyer_1_last_name,
-    m.buyer_1_first_name,
-    m.buyer_2_first_name,
-    m.buyer_2_last_name,
-    m.sale_date as buyer_close,
-    t.seller_1_last_name,
-    t.seller_1_first_name,
-    t.sale_date as seller_close
+m.*,
+t.*
 FROM
-    buyer_table m
-LEFT JOIN
-    seller_table t
+   table1 m
+INNER JOIN
+    table2 t
 ON
-     m.buyer_1_last_name=t.seller_1_last_name AND m.buyer_1_first_name=t.seller_1_first_name AND
-    ABS(EXTRACT(EPOCH FROM AGE( m.sale_date, t.sale_date))/ 86400) <= 365
+     m.name1=t.name3 AND m.name2=t.name4 AND
+    ABS(EXTRACT(EPOCH FROM AGE( m.date1, t.date2))/ 86400) <= 365
 ;
-
-
-
-
 
 
 /*
