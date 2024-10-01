@@ -26,6 +26,34 @@ CREATE INDEX idx_seller1 ON seller_table(seller_1_last_name, seller_1_first_name
 */
 
 DROP TABLE IF EXISTS table1;
+CREATE TABLE table1 AS
+    SELECT transaction_id as buyer_transaction_id,buyer_1_first_name, buyer_1_last_name, date as buyer_date
+    FROM table_full;
+ALTER TABLE table1 ADD COLUMN id_b SERIAL PRIMARY KEY;
+
+DROP TABLE IF EXISTS table2;
+CREATE TABLE table2 AS
+    SELECT transaction_id as seller_transaction_id,seller_1_first_name, seller_1_last_name, date as seller_date
+    FROM table_full;
+ALTER TABLE table2 ADD COLUMN id_s SERIAL PRIMARY KEY;
+
+DROP TABLE IF EXISTS INTERNAL_TRANSACTION;
+CREATE TABLE INTERNAL_TRANSACTION AS
+SELECT
+m.*,
+t.*
+FROM
+   table1 m
+INNER JOIN
+    table2 t
+ON
+     m.buyer_1_first_name=t.seller_1_first_name AND m.buyer_1_last_name=t.seller_1_last_name AND
+    ABS(EXTRACT(EPOCH FROM AGE( m.buyer_date, t.seller_date))/ 86400) <= 365;
+
+
+
+/*
+DROP TABLE IF EXISTS table1;
 CREATE TABLE table1 (
     id SERIAL PRIMARY KEY,
    name1 TEXT, name2 TEXT,  date1 DATE
@@ -74,7 +102,7 @@ ON
     ABS(EXTRACT(EPOCH FROM AGE( m.date1, t.date2))/ 86400) <= 365
 ;
 
-
+*/
 /*
 
 
