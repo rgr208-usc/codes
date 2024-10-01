@@ -14,9 +14,10 @@ SELECT
       AND primary_category_code='A'  --arm length
       AND property_indicator_code___static='10' -- single family
       AND  (fips_code='06037' OR fips_code='06059') --LA MSA
-AND seller_1_last_name!='' AND seller_1_first_name!='' AND buyer_1_first_name_and_middle_initial!=''
-                  AND buyer_1_last_name!='' --non missing name
-                  AND TO_DATE(SUBSTRING(sale_derived_date FROM 1 FOR 8), 'YYYYMMDD')>'2015-01-01' --time sample
+AND ( seller_1_last_name!='' AND seller_1_first_name!='')
+      AND ((buyer_1_first_name_and_middle_initial!=''  AND buyer_1_last_name!='') OR (buyer_1_first_name_and_middle_initial!=''
+                  AND buyer_1_last_name!=''))  --non missing name
+                  AND TO_DATE(SUBSTRING(sale_derived_date FROM 1 FOR 8), 'YYYYMMDD')>'2010-01-01' --time sample
 AND TO_DATE(SUBSTRING(sale_derived_date FROM 1 FOR 8), 'YYYYMMDD')<'2024-01-01'
  ;
 
@@ -27,7 +28,7 @@ CREATE INDEX idx_seller1 ON seller_table(seller_1_last_name, seller_1_first_name
 
 DROP TABLE IF EXISTS table1;
 CREATE TABLE table1 AS
-    SELECT transaction_id as buyer_transaction_id,buyer_1_first_name, buyer_1_last_name, date as buyer_date
+    SELECT transaction_id as buyer_transaction_id,buyer_1_first_name, buyer_1_last_name, buyer_2_first_name, buyer_2_last_name,date as buyer_date
     FROM table_full;
 ALTER TABLE table1 ADD COLUMN id_b SERIAL PRIMARY KEY;
 
@@ -37,8 +38,10 @@ CREATE TABLE table2 AS
     FROM table_full;
 ALTER TABLE table2 ADD COLUMN id_s SERIAL PRIMARY KEY;
 
-DROP TABLE IF EXISTS INTERNAL_TRANSACTION;
-CREATE TABLE INTERNAL_TRANSACTION AS
+--ROUND 1 Match on Buyer 1 / Seller 1
+
+DROP TABLE IF EXISTS INTERNAL_TRANSACTION1;
+CREATE TABLE INTERNAL_TRANSACTION1 AS
 SELECT
 m.*,
 t.*
@@ -47,10 +50,37 @@ FROM
 INNER JOIN
     table2 t
 ON
-     m.buyer_1_first_name=t.seller_1_first_name AND m.buyer_1_last_name=t.seller_1_last_name AND
+     m.buyer_1_first_name=t.seller_1_first_name AND m.buyer_1_last_name=t.seller_1_last_name
+     -- m.buyer_2_first_name=t.seller_1_first_name AND m.buyer_2_last_name=t.seller_1_last_name
+
+         AND
     ABS(EXTRACT(EPOCH FROM AGE( m.buyer_date, t.seller_date))/ 86400) <= 365;
+WHERE m.buyer_1_first_name!='' AND  m.buyer_1_last_name!=''
 
 
+--ROUND 2 Match on Buyer 2 / Seller 1
+
+  DROP TABLE IF EXISTS INTERNAL_TRANSACTION2;
+CREATE TABLE INTERNAL_TRANSACTION2 AS
+SELECT
+m.*,
+t.*
+FROM
+   table1 m
+INNER JOIN
+    table2 t
+ON
+     --m.buyer_1_first_name=t.seller_1_first_name AND m.buyer_1_last_name=t.seller_1_last_name
+      m.buyer_2_first_name=t.seller_1_first_name AND m.buyer_2_last_name=t.seller_1_last_name
+
+         AND
+    ABS(EXTRACT(EPOCH FROM AGE( m.buyer_date, t.seller_date))/ 86400) <= 365
+WHERE m.buyer_2_first_name!='' AND  m.buyer_2_last_name!=''
+
+select count(*) from table_full
+select count(*) from table1
+select count(*) from internal_transaction1
+select count(*) from internal_transaction2
 
 /*
 DROP TABLE IF EXISTS table1;
