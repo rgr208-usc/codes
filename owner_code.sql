@@ -1,3 +1,4 @@
+--notes seller2 full name is almost never informed
 DROP TABLE IF EXISTS table_full;
 CREATE TABLE table_full AS
 SELECT
@@ -14,17 +15,11 @@ SELECT
       AND primary_category_code='A'  --arm length
       AND property_indicator_code___static='10' -- single family
       AND  (fips_code='06037' OR fips_code='06059') --LA MSA
-AND ( seller_1_last_name!='' AND seller_1_first_name!='')
-      AND ((buyer_1_first_name_and_middle_initial!=''  AND buyer_1_last_name!='') OR (buyer_1_first_name_and_middle_initial!=''
-                  AND buyer_1_last_name!=''))  --non missing name
-                  AND TO_DATE(SUBSTRING(sale_derived_date FROM 1 FOR 8), 'YYYYMMDD')>'2010-01-01' --time sample
+AND TO_DATE(SUBSTRING(sale_derived_date FROM 1 FOR 8), 'YYYYMMDD')>'2010-01-01' --time sample
 AND TO_DATE(SUBSTRING(sale_derived_date FROM 1 FOR 8), 'YYYYMMDD')<'2024-01-01'
  ;
 
-/*
-CREATE INDEX idx_buyer1 ON buyer_table(buyer_1_last_name, buyer_1_first_name, sale_date);
-CREATE INDEX idx_seller1 ON seller_table(seller_1_last_name, seller_1_first_name,sale_date);
-*/
+---prepare the buyer and seller tables
 
 DROP TABLE IF EXISTS table1;
 CREATE TABLE table1 AS
@@ -54,9 +49,12 @@ ON
      -- m.buyer_2_first_name=t.seller_1_first_name AND m.buyer_2_last_name=t.seller_1_last_name
 
          AND
-    ABS(EXTRACT(EPOCH FROM AGE( m.buyer_date, t.seller_date))/ 86400) <= 365;
+    ABS(EXTRACT(EPOCH FROM AGE( m.buyer_date, t.seller_date))/ 86400) <= 365
 WHERE m.buyer_1_first_name!='' AND  m.buyer_1_last_name!=''
+AND  t.seller_1_last_name!='' AND t.seller_1_first_name!=''
+;
 
+select id_b, count(*) as count from internal_transaction2 group by id_b  order by count DESC
 
 --ROUND 2 Match on Buyer 2 / Seller 1
 
@@ -76,11 +74,18 @@ ON
          AND
     ABS(EXTRACT(EPOCH FROM AGE( m.buyer_date, t.seller_date))/ 86400) <= 365
 WHERE m.buyer_2_first_name!='' AND  m.buyer_2_last_name!=''
+AND  t.seller_1_last_name!='' AND t.seller_1_first_name!=''
 
-select count(*) from table_full
-select count(*) from table1
-select count(*) from internal_transaction1
+--SELECT COUNT(CASE WHEN status = 'completed' THEN 1 END)
+
+/*
+select count( seller_2_full_name) from ownertransfer_comprehensive WHERE seller_2_full_name!=''
+select count(distinct id_s) from table2
+select count(distinct id_b) from internal_transaction1
+select count(distinct id_b) from internal_transaction2
 select count(*) from internal_transaction2
+
+ */
 
 /*
 DROP TABLE IF EXISTS table1;
