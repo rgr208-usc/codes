@@ -15,15 +15,15 @@ SELECT
     SUBSTRING(seller_1_first_name FROM 1 FOR 4) as seller_1_first_name,
     seller_1_last_name,
     TO_DATE(SUBSTRING(sale_derived_date FROM 1 FOR 8), 'YYYYMMDD') AS date,
-    buyer_1_corporate_indicator
+    EXTRACT (MONTH FROM  TO_DATE(SUBSTRING(sale_derived_date FROM 1 FOR 8), 'YYYYMMDD')) AS month,
+    EXTRACT (YEAR FROM  TO_DATE(SUBSTRING(sale_derived_date FROM 1 FOR 8), 'YYYYMMDD')) AS year
     FROM ownertransfer_comprehensive
     WHERE interfamily_related_indicator='0' --no family transfer
      AND investor_purchase_indicator='0'  -- no investor very bad for the matching -- very very poorly indicated
       AND primary_category_code='A'  --arm length
-      AND property_indicator_code___static='10' -- single family
-      AND buyer_occupancy_code!='S' AND  buyer_occupancy_code!='T'--rule out absentee buyers
+      AND (property_indicator_code___static='10' OR property_indicator_code___static='11')-- single family or condo --
       AND  (fips_code='06037' OR fips_code='06059') --LA MSA
-AND TO_DATE(SUBSTRING(sale_derived_date FROM 1 FOR 8), 'YYYYMMDD')>'2010-01-01' --time sample
+AND TO_DATE(SUBSTRING(sale_derived_date FROM 1 FOR 8), 'YYYYMMDD')>'2000-01-01' --time sample
 AND TO_DATE(SUBSTRING(sale_derived_date FROM 1 FOR 8), 'YYYYMMDD')<'2024-01-01'
  ;
 
@@ -139,22 +139,9 @@ SELECT * FROM INTERNAL_TRANSACTION4
 ;
 
 
----trying to get the serial matcher
-
-
-drop table if exists matched_transaction_test;
-create table matched_transaction_test AS
-select buyer_transaction_id, buyer_1_first_name, buyer_1_last_name, count(*) as count from internal_transaction
-group by buyer_transaction_id, buyer_1_first_name, buyer_1_last_name
-order by count DESC
-;
-
-
----Match in Principal Table
+---Merge the Mstch in Principal Table
 
 ---- Create a Table with matched_transaction -----
-
-
 
 
 drop table if exists matched_transaction;
@@ -180,19 +167,29 @@ select transaction_id,  buyer_transaction_id, count from table_full_with_match w
 
 ---- match variables
 
+select count(distinct buyer_transaction_id) from internal_transaction
+select count(distinct buyer_transaction_id) from table_full_with_match
 
-select count(*) from table_full_with_match
-WHERE seller_1_last_name!='' AND seller_1_first_name!=''
-AND
-(
-    (buyer_1_first_name!='' AND buyer_1_last_name!='')
-    OR
-    (buyer_2_first_name!='' AND buyer_2_last_name!='')
-    OR
-    (buyer_3_first_name!='' AND buyer_3_last_name!='')
-    OR
-    (buyer_4_first_name!='' AND buyer_4_last_name!='')
-    )
+
+
+SELECT
+   year, month, count(buyer_transaction_id) as match, count(transaction_id) as total,
+    100*count(buyer_transaction_id)/count(transaction_id)  as share
+    FROM table_full_with_match
+    WHERE count<3 OR count is null
+GROUP BY year, month
+ORDER BY year, month
+;
+/*
+
+---trying to get the serial matcher
+
+
+drop table if exists matched_transaction_test;
+create table matched_transaction_test AS
+select buyer_transaction_id, buyer_1_first_name, buyer_1_last_name, count(*) as count from internal_transaction
+group by buyer_transaction_id, buyer_1_first_name, buyer_1_last_name
+order by count DESC
 ;
 
-select count(*) from internal_transaction
+ */
