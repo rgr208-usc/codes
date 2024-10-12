@@ -2,6 +2,7 @@
 DROP TABLE IF EXISTS table_full;
 CREATE TABLE table_full AS
 SELECT
+    NULLIF(REGEXP_REPLACE(clip,'[^0-9.]+', '', 'g'), '')::bigint as clip,
     NULLIF(REGEXP_REPLACE( owner_transfer_composite_transaction_id,'[^0-9.]+', '', 'g'), '')::bigint as transaction_id,
     SUBSTRING(buyer_1_first_name_and_middle_initial FROM 1 FOR 4) as buyer_1_first_name,
     buyer_1_last_name,
@@ -13,30 +14,38 @@ SELECT
      buyer_4_last_name,
     SUBSTRING(seller_1_first_name FROM 1 FOR 4) as seller_1_first_name,
     seller_1_last_name,
-    TO_DATE(SUBSTRING(sale_derived_date FROM 1 FOR 8), 'YYYYMMDD') AS date
+    TO_DATE(SUBSTRING(sale_derived_date FROM 1 FOR 8), 'YYYYMMDD') AS date,
+    buyer_1_corporate_indicator
     FROM ownertransfer_comprehensive
     WHERE interfamily_related_indicator='0' --no family transfer
+     AND investor_purchase_indicator='0'  -- no investor very bad for the matching -- very very poorly indicated
       AND primary_category_code='A'  --arm length
       AND property_indicator_code___static='10' -- single family
+      AND buyer_occupancy_code!='S' AND  buyer_occupancy_code!='T'--rule out absentee buyers
       AND  (fips_code='06037' OR fips_code='06059') --LA MSA
 AND TO_DATE(SUBSTRING(sale_derived_date FROM 1 FOR 8), 'YYYYMMDD')>'2010-01-01' --time sample
 AND TO_DATE(SUBSTRING(sale_derived_date FROM 1 FOR 8), 'YYYYMMDD')<'2024-01-01'
  ;
 
+
+
 ---prepare the buyer and seller tables
 
 DROP TABLE IF EXISTS table1;
 CREATE TABLE table1 AS
-    SELECT transaction_id as buyer_transaction_id,buyer_1_first_name, buyer_1_last_name, buyer_2_first_name, buyer_2_last_name
+    SELECT clip as buyer_clip, transaction_id as buyer_transaction_id,buyer_1_first_name, buyer_1_last_name, buyer_2_first_name, buyer_2_last_name
     ,buyer_3_first_name, buyer_3_last_name, buyer_4_first_name, buyer_4_last_name
      ,date as buyer_date
-    FROM table_full;
+    FROM table_full
+;
+
 ALTER TABLE table1 ADD COLUMN id_b SERIAL PRIMARY KEY;
 
 DROP TABLE IF EXISTS table2;
 CREATE TABLE table2 AS
-    SELECT transaction_id as seller_transaction_id,seller_1_first_name, seller_1_last_name, date as seller_date
-    FROM table_full;
+    SELECT clip as seller_clip, transaction_id as seller_transaction_id,seller_1_first_name, seller_1_last_name, date as seller_date
+    FROM table_full
+;
 ALTER TABLE table2 ADD COLUMN id_s SERIAL PRIMARY KEY;
 
 ---
@@ -56,8 +65,9 @@ ON
      m.buyer_1_first_name=t.seller_1_first_name AND m.buyer_1_last_name=t.seller_1_last_name
          AND
     ABS(EXTRACT(EPOCH FROM AGE( m.buyer_date, t.seller_date))/ 86400) <= 365
-WHERE t.seller_1_last_name!='' AND t.seller_1_first_name!=''
+WHERE m.buyer_1_first_name!='' AND m.buyer_1_last_name!='' AND t.seller_1_first_name!='' AND  t.seller_1_last_name!=''
 ;
+
 --select buyer_transaction_id,count(*) as count from internal_transaction2 group by buyer_transaction_id order by count DESC
 
 --ROUND 2 Match on Buyer 2 / Seller 1
@@ -75,8 +85,7 @@ ON
       m.buyer_2_first_name=t.seller_1_first_name AND m.buyer_2_last_name=t.seller_1_last_name
          AND
     ABS(EXTRACT(EPOCH FROM AGE( m.buyer_date, t.seller_date))/ 86400) <= 365
-WHERE
-t.seller_1_last_name!='' AND t.seller_1_first_name!=''
+WHERE m.buyer_2_first_name!='' AND m.buyer_2_last_name!='' AND t.seller_1_first_name!='' AND  t.seller_1_last_name!=''
 ;
 
 ---ROUND3
@@ -95,7 +104,7 @@ ON
 
          AND
     ABS(EXTRACT(EPOCH FROM AGE( m.buyer_date, t.seller_date))/ 86400) <= 365
-WHERE t.seller_1_last_name!='' AND t.seller_1_first_name!=''
+WHERE m.buyer_3_first_name!='' AND m.buyer_3_last_name!='' AND t.seller_1_first_name!='' AND  t.seller_1_last_name!=''
 ;
 
 ---ROUND4
@@ -113,7 +122,7 @@ ON
       m.buyer_4_first_name=t.seller_1_first_name AND m.buyer_4_last_name=t.seller_1_last_name
          AND
     ABS(EXTRACT(EPOCH FROM AGE( m.buyer_date, t.seller_date))/ 86400) <= 365
-WHERE t.seller_1_last_name!='' AND t.seller_1_first_name!=''
+ WHERE m.buyer_4_first_name!='' AND m.buyer_4_last_name!='' AND t.seller_1_first_name!='' AND  t.seller_1_last_name!=''
 ;
 
 ---- UNION (get rid of dubplicates by default)
@@ -129,9 +138,50 @@ UNION
 SELECT * FROM INTERNAL_TRANSACTION4
 ;
 
-select count(distinct id_s) from internal_transaction
-select count(distinct transaction_id) from table_full
-select count(distinct transaction_id) from table_full
+
+---trying to get the serial matcher
+
+
+drop table if exists matched_transaction_test;
+create table matched_transaction_test AS
+select buyer_transaction_id, buyer_1_first_name, buyer_1_last_name, count(*) as count from internal_transaction
+group by buyer_transaction_id, buyer_1_first_name, buyer_1_last_name
+order by count DESC
+;
+
+
+---Match in Principal Table
+
+---- Create a Table with matched_transaction -----
+
+
+
+
+drop table if exists matched_transaction;
+create table matched_transaction AS
+select buyer_transaction_id, count(*) as count from internal_transaction
+group by buyer_transaction_id
+;
+
+--- Matching the initial table with matched transaction using left joint
+
+drop table if exists  table_full_with_match;
+create table table_full_with_match AS
+select m.*, t.*
+FROM table_full m
+left join matched_transaction t
+on m.transaction_id=t.buyer_transaction_id
+;
+
+select count(*) from table_full_with_match
+
+select transaction_id,  buyer_transaction_id, count from table_full_with_match where count is not null
+
+
+---- match variables
+
+
+select count(*) from table_full_with_match
 WHERE seller_1_last_name!='' AND seller_1_first_name!=''
 AND
 (
@@ -145,7 +195,4 @@ AND
     )
 ;
 
-select count(distinct id_b) from internal_transaction2
-select count(*) from internal_transaction2
-
- */
+select count(*) from internal_transaction
