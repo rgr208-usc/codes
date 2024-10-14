@@ -66,18 +66,6 @@ ON
 WHERE  m.buyer_1_first_name!='' AND m.buyer_1_last_name!='' AND t.seller_1_first_name!='' AND  t.seller_1_last_name!=''
 ;
 
-select count(*) from internal_transaction1
-select count(distinct buyer_transaction_id) from internal_transaction
-select count(distinct m.buyer_transaction_id) from table1 m WHERE (m.buyer_1_first_name!='' AND m.buyer_1_last_name!='')
-      OR (m.buyer_2_first_name!='' AND m.buyer_2_last_name!='')
-      OR (m.buyer_3_first_name!='' AND m.buyer_3_last_name!='')
-      OR (m.buyer_4_first_name!='' AND m.buyer_4_last_name!='')
-
-select count(distinct m.buyer_transaction_id) from table1 m
-select count(distinct seller_transaction_id) from internal_transaction
-select count(distinct t.seller_transaction_id) from table2 t where  t.seller_1_first_name!='' AND  t.seller_1_last_name!=''
-select count(distinct t.seller_transaction_id) from table2 t
-
     --select buyer_transaction_id,count(*) as count from internal_transaction2 group by buyer_transaction_id order by count DESC
 
 --ROUND 2 Match on Buyer 2 / Seller 1
@@ -160,8 +148,6 @@ select buyer_transaction_id, count(*) as count from internal_transaction
 group by buyer_transaction_id
 ;
 
-select count(*) from matched_transaction;
-
 --- Matching the initial table with matched transaction using left joint
 
 drop table if exists  table_full_with_match;
@@ -193,10 +179,7 @@ on m.transaction_id=t.seller_transaction_id
 
 ---- counting
 
-select count(transaction_id) from table_full_with_match ;---total transactions
-select count(buyer_transaction_id) from table_full_with_match ;---mached transactions-----match variables over time
-
--- collapse
+-- collapse as share of potential buyer matches
 SELECT
    year, month, count(buyer_transaction_id) as match, count(transaction_id) as total,
     100*count(buyer_transaction_id)/count(transaction_id)  as share
