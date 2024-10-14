@@ -29,6 +29,7 @@ AND TO_DATE(SUBSTRING(sale_derived_date FROM 1 FOR 8), 'YYYYMMDD')<'2024-01-01'
 
 
 
+
 ---prepare the buyer and seller tables
 
 DROP TABLE IF EXISTS table1;
@@ -48,8 +49,6 @@ CREATE TABLE table2 AS
 ;
 ALTER TABLE table2 ADD COLUMN id_s SERIAL PRIMARY KEY;
 
----
-
 --ROUND 1 Match on Buyer 1 / Seller 1
 
 DROP TABLE IF EXISTS INTERNAL_TRANSACTION1;
@@ -63,12 +62,23 @@ INNER JOIN
     table2 t
 ON
      m.buyer_1_first_name=t.seller_1_first_name AND m.buyer_1_last_name=t.seller_1_last_name
-         AND
-    ABS(EXTRACT(EPOCH FROM AGE( m.buyer_date, t.seller_date))/ 86400) <= 365
-WHERE m.buyer_1_first_name!='' AND m.buyer_1_last_name!='' AND t.seller_1_first_name!='' AND  t.seller_1_last_name!=''
+         AND ABS(EXTRACT(EPOCH FROM AGE( m.buyer_date, t.seller_date))/ 86400) <= 365
+WHERE  m.buyer_1_first_name!='' AND m.buyer_1_last_name!='' AND t.seller_1_first_name!='' AND  t.seller_1_last_name!=''
 ;
 
---select buyer_transaction_id,count(*) as count from internal_transaction2 group by buyer_transaction_id order by count DESC
+select count(*) from internal_transaction1
+select count(distinct buyer_transaction_id) from internal_transaction
+select count(distinct m.buyer_transaction_id) from table1 m WHERE (m.buyer_1_first_name!='' AND m.buyer_1_last_name!='')
+      OR (m.buyer_2_first_name!='' AND m.buyer_2_last_name!='')
+      OR (m.buyer_3_first_name!='' AND m.buyer_3_last_name!='')
+      OR (m.buyer_4_first_name!='' AND m.buyer_4_last_name!='')
+
+select count(distinct m.buyer_transaction_id) from table1 m
+select count(distinct seller_transaction_id) from internal_transaction
+select count(distinct t.seller_transaction_id) from table2 t where  t.seller_1_first_name!='' AND  t.seller_1_last_name!=''
+select count(distinct t.seller_transaction_id) from table2 t
+
+    --select buyer_transaction_id,count(*) as count from internal_transaction2 group by buyer_transaction_id order by count DESC
 
 --ROUND 2 Match on Buyer 2 / Seller 1
 
@@ -141,7 +151,7 @@ SELECT * FROM INTERNAL_TRANSACTION4
 
 ---Merge the Mstch in Principal Table
 
----- Create a Table with matched_transaction -----
+---- Create a Table with matched_transaction just exacted the id on the buyer side  -----
 
 
 drop table if exists matched_transaction;
@@ -149,6 +159,8 @@ create table matched_transaction AS
 select buyer_transaction_id, count(*) as count from internal_transaction
 group by buyer_transaction_id
 ;
+
+select count(*) from matched_transaction;
 
 --- Matching the initial table with matched transaction using left joint
 
@@ -158,28 +170,47 @@ select m.*, t.*
 FROM table_full m
 left join matched_transaction t
 on m.transaction_id=t.buyer_transaction_id
+
+
+---seller side
+
+drop table if exists matched_transaction_s;
+create table matched_transaction_s AS
+select seller_transaction_id, count(*) as count from internal_transaction
+group by seller_transaction_id
 ;
 
-select count(*) from table_full_with_match
+select count(*) from matched_transaction;
 
-select transaction_id,  buyer_transaction_id, count from table_full_with_match where count is not null
+--- Matching the initial table with matched transaction using left joint
 
+drop table if exists  table_full_with_match_s;
+create table table_full_with_match_s AS
+select m.*, t.*
+FROM table_full m
+left join matched_transaction_s t
+on m.transaction_id=t.seller_transaction_id
 
----- match variables
+---- counting
 
-select count(distinct buyer_transaction_id) from internal_transaction
-select count(distinct buyer_transaction_id) from table_full_with_match
+select count(transaction_id) from table_full_with_match ;---total transactions
+select count(buyer_transaction_id) from table_full_with_match ;---mached transactions-----match variables over time
 
-
-
+-- collapse
 SELECT
    year, month, count(buyer_transaction_id) as match, count(transaction_id) as total,
     100*count(buyer_transaction_id)/count(transaction_id)  as share
-    FROM table_full_with_match
-    WHERE count<3 OR count is null
+    FROM table_full_with_match m
+     WHERE (m.buyer_1_first_name!='' AND m.buyer_1_last_name!='')
+      OR (m.buyer_2_first_name!='' AND m.buyer_2_last_name!='')
+      OR (m.buyer_3_first_name!='' AND m.buyer_3_last_name!='')
+      OR (m.buyer_4_first_name!='' AND m.buyer_4_last_name!='')
 GROUP BY year, month
 ORDER BY year, month
 ;
+
+
+
 /*
 
 ---trying to get the serial matcher
