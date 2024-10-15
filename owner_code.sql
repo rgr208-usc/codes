@@ -3,9 +3,8 @@
 
 -- you can exclude when Buy and Sell same property
 -- buyer is much more informed than seller
+--notes seller2 full name is almost never informed
 
-
--notes seller2 full name is almost never informed
 DROP TABLE IF EXISTS table_full;
 CREATE TABLE table_full AS
 SELECT
@@ -159,6 +158,7 @@ drop table if exists matched_transaction;
 create table matched_transaction AS
 select buyer_transaction_id, count(*) as count, AVG(dif) as dif from internal_transaction
 group by buyer_transaction_id
+-- where buyer_clip!=seller_clip -- to screen out the buy / sell of the same property within 12 months
 ;
 
 --- Matching the initial table with matched transaction using left joint
