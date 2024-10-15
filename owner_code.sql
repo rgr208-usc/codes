@@ -146,6 +146,7 @@ UNION
 SELECT * FROM INTERNAL_TRANSACTION4
 ;
 
+--select count(distinct buyer_transaction_id) from INTERNAL_TRANSACTION
 
 ---Merge the Mstch in Principal Table
 
@@ -168,6 +169,8 @@ FROM table_full m
 left join matched_transaction t
 on m.transaction_id=t.buyer_transaction_id
 ;
+
+
 ---- counting
 
 -- collapse as share of potential buyer matches
