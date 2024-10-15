@@ -10,13 +10,13 @@ CREATE TABLE table_full AS
 SELECT
     NULLIF(REGEXP_REPLACE(clip,'[^0-9.]+', '', 'g'), '')::bigint as clip,
     NULLIF(REGEXP_REPLACE( owner_transfer_composite_transaction_id,'[^0-9.]+', '', 'g'), '')::bigint as transaction_id,
-    SUBSTRING(buyer_1_first_name_and_middle_initial FROM 1 FOR 4) as buyer_1_first_name,
+    SUBSTRING(buyer_1_first_name_and_middle_initial FROM 1 FOR 3) as buyer_1_first_name,
     buyer_1_last_name,
-    SUBSTRING(buyer_2_first_name_and_middle_initial FROM 1 FOR 4) as buyer_2_first_name,
+    SUBSTRING(buyer_2_first_name_and_middle_initial FROM 1 FOR 3) as buyer_2_first_name,
      buyer_2_last_name,
-     SUBSTRING(buyer_3_first_name_and_middle_initial FROM 1 FOR 4) as buyer_3_first_name,
+     SUBSTRING(buyer_3_first_name_and_middle_initial FROM 1 FOR 3) as buyer_3_first_name,
      buyer_3_last_name,
-     SUBSTRING(buyer_4_first_name_and_middle_initial FROM 1 FOR 4) as buyer_4_first_name,
+     SUBSTRING(buyer_4_first_name_and_middle_initial FROM 1 FOR 3) as buyer_4_first_name,
      buyer_4_last_name,
     SUBSTRING(seller_1_first_name FROM 1 FOR 4) as seller_1_first_name,
     seller_1_last_name,
@@ -32,8 +32,6 @@ SELECT
 AND TO_DATE(SUBSTRING(sale_derived_date FROM 1 FOR 8), 'YYYYMMDD')>'2000-01-01' --time sample
 AND TO_DATE(SUBSTRING(sale_derived_date FROM 1 FOR 8), 'YYYYMMDD')<'2024-01-01'
  ;
-
-
 
 
 ---prepare the buyer and seller tables
@@ -178,8 +176,8 @@ SELECT
     , 100*count(buyer_transaction_id)/count(transaction_id)  as share,  percentile_cont(0.5) WITHIN GROUP (ORDER BY dif) AS dif_50
     FROM table_full_with_match m
      WHERE
-         count<2
-AND (
+         count<2 -- single match
+AND ( --to have share of matchable buyers aka buyers with name
          (m.buyer_1_first_name != '' AND m.buyer_1_last_name != '')
              OR (m.buyer_2_first_name != '' AND m.buyer_2_last_name != '')
              OR (m.buyer_3_first_name != '' AND m.buyer_3_last_name != '')
