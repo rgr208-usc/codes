@@ -1,4 +1,11 @@
---notes seller2 full name is almost never informed
+
+--BUYER-SELLER MATCHING CODE
+
+-- you can exclude when Buy and Sell same property
+-- buyer is much more informed than seller
+
+
+-notes seller2 full name is almost never informed
 DROP TABLE IF EXISTS table_full;
 CREATE TABLE table_full AS
 SELECT
@@ -55,7 +62,8 @@ DROP TABLE IF EXISTS INTERNAL_TRANSACTION1;
 CREATE TABLE INTERNAL_TRANSACTION1 AS
 SELECT
 m.*,
-t.*
+t.*,
+m.buyer_date-t.seller_date as  dif
 FROM
    table1 m
 INNER JOIN
@@ -66,6 +74,8 @@ ON
 WHERE  m.buyer_1_first_name!='' AND m.buyer_1_last_name!='' AND t.seller_1_first_name!='' AND  t.seller_1_last_name!=''
 ;
 
+
+
     --select buyer_transaction_id,count(*) as count from internal_transaction2 group by buyer_transaction_id order by count DESC
 
 --ROUND 2 Match on Buyer 2 / Seller 1
@@ -74,7 +84,8 @@ DROP TABLE IF EXISTS INTERNAL_TRANSACTION2;
 CREATE TABLE INTERNAL_TRANSACTION2 AS
 SELECT
 m.*,
-t.*
+t.*,
+m.buyer_date-t.seller_date as  dif
 FROM
    table1 m
 INNER JOIN
@@ -92,7 +103,8 @@ DROP TABLE IF EXISTS INTERNAL_TRANSACTION3;
 CREATE TABLE INTERNAL_TRANSACTION3 AS
 SELECT
 m.*,
-t.*
+t.*,
+m.buyer_date-t.seller_date as  dif
 FROM
    table1 m
 INNER JOIN
@@ -111,7 +123,8 @@ DROP TABLE IF EXISTS INTERNAL_TRANSACTION4;
 CREATE TABLE INTERNAL_TRANSACTION4 AS
 SELECT
 m.*,
-t.*
+t.*,
+m.buyer_date-t.seller_date as  dif
 FROM
    table1 m
 INNER JOIN
@@ -144,7 +157,7 @@ SELECT * FROM INTERNAL_TRANSACTION4
 
 drop table if exists matched_transaction;
 create table matched_transaction AS
-select buyer_transaction_id, count(*) as count from internal_transaction
+select buyer_transaction_id, count(*) as count, AVG(dif) as dif from internal_transaction
 group by buyer_transaction_id
 ;
 
@@ -156,38 +169,22 @@ select m.*, t.*
 FROM table_full m
 left join matched_transaction t
 on m.transaction_id=t.buyer_transaction_id
-
-
----seller side
-
-drop table if exists matched_transaction_s;
-create table matched_transaction_s AS
-select seller_transaction_id, count(*) as count from internal_transaction
-group by seller_transaction_id
 ;
-
-select count(*) from matched_transaction;
-
---- Matching the initial table with matched transaction using left joint
-
-drop table if exists  table_full_with_match_s;
-create table table_full_with_match_s AS
-select m.*, t.*
-FROM table_full m
-left join matched_transaction_s t
-on m.transaction_id=t.seller_transaction_id
-
 ---- counting
 
 -- collapse as share of potential buyer matches
 SELECT
-   year, month, count(buyer_transaction_id) as match, count(transaction_id) as total,
-    100*count(buyer_transaction_id)/count(transaction_id)  as share
+   year, month, count(buyer_transaction_id) as match, count(transaction_id) as total, percentile_cont(0.5)WITHIN GROUP (ORDER BY count) AS count_50
+    , 100*count(buyer_transaction_id)/count(transaction_id)  as share,  percentile_cont(0.5) WITHIN GROUP (ORDER BY dif) AS dif_50
     FROM table_full_with_match m
-     WHERE (m.buyer_1_first_name!='' AND m.buyer_1_last_name!='')
-      OR (m.buyer_2_first_name!='' AND m.buyer_2_last_name!='')
-      OR (m.buyer_3_first_name!='' AND m.buyer_3_last_name!='')
-      OR (m.buyer_4_first_name!='' AND m.buyer_4_last_name!='')
+     WHERE
+         count<2
+AND (
+         (m.buyer_1_first_name != '' AND m.buyer_1_last_name != '')
+             OR (m.buyer_2_first_name != '' AND m.buyer_2_last_name != '')
+             OR (m.buyer_3_first_name != '' AND m.buyer_3_last_name != '')
+            OR (m.buyer_4_first_name != '' AND m.buyer_4_last_name != '')
+         )
 GROUP BY year, month
 ORDER BY year, month
 ;
