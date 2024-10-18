@@ -4,6 +4,7 @@
 -- you can exclude when Buy and Sell same property
 -- buyer is much more informed than seller
 --notes seller2 full name is almost never informed
+--how to define investor
 
 DROP TABLE IF EXISTS table_full;
 CREATE TABLE table_full AS
@@ -18,7 +19,7 @@ SELECT
      buyer_3_last_name,
      SUBSTRING(buyer_4_first_name_and_middle_initial FROM 1 FOR 3) as buyer_4_first_name,
      buyer_4_last_name,
-    SUBSTRING(seller_1_first_name FROM 1 FOR 4) as seller_1_first_name,
+    SUBSTRING(seller_1_first_name FROM 1 FOR 3) as seller_1_first_name,
     seller_1_last_name,
     TO_DATE(SUBSTRING(sale_derived_date FROM 1 FOR 8), 'YYYYMMDD') AS date,
     EXTRACT (MONTH FROM  TO_DATE(SUBSTRING(sale_derived_date FROM 1 FOR 8), 'YYYYMMDD')) AS month,
@@ -146,6 +147,7 @@ UNION
 SELECT * FROM INTERNAL_TRANSACTION4
 ;
 
+select count(distinct buyer_transaction_id) from internal_transaction;
 --select count(distinct buyer_transaction_id) from INTERNAL_TRANSACTION
 
 ---Merge the Mstch in Principal Table
@@ -156,7 +158,11 @@ SELECT * FROM INTERNAL_TRANSACTION4
 drop table if exists matched_transaction;
 create table matched_transaction AS
 select buyer_transaction_id, count(*) as count, AVG(dif) as dif from internal_transaction
+---where buyer_clip!=seller_clip --option to make sure buyer-seller match for different properties
 group by buyer_transaction_id
+;
+
+select count(*) from matched_transaction;
 -- where buyer_clip!=seller_clip -- to screen out the buy / sell of the same property within 12 months
 ;
 
@@ -170,17 +176,18 @@ left join matched_transaction t
 on m.transaction_id=t.buyer_transaction_id
 ;
 
+select count(distinct buyer_transaction_id) from table_full_with_match;
+
 
 ---- counting
 
 -- collapse as share of potential buyer matches
-SELECT
-   year, month, count(buyer_transaction_id) as match, count(transaction_id) as total, percentile_cont(0.5)WITHIN GROUP (ORDER BY count) AS count_50
+SELECT year, month, count(buyer_transaction_id) as match, count(transaction_id) as total, percentile_cont(0.5)WITHIN GROUP (ORDER BY count) AS count_50
     , 100*count(buyer_transaction_id)/count(transaction_id)  as share,  percentile_cont(0.5) WITHIN GROUP (ORDER BY dif) AS dif_50
     FROM table_full_with_match m
-     WHERE
-         count<2 -- single match
-AND ( --to have share of matchable buyers aka buyers with name
+    WHERE
+         -- count<2 or count is null AND-- single match
+ (--to have share of matchable buyers aka buyers with name
          (m.buyer_1_first_name != '' AND m.buyer_1_last_name != '')
              OR (m.buyer_2_first_name != '' AND m.buyer_2_last_name != '')
              OR (m.buyer_3_first_name != '' AND m.buyer_3_last_name != '')
